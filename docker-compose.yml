@@ -1,9 +1,30 @@
 services:
+  postgres_default:
+    image: postgres:16-alpine
+    container_name: autoimovel-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: autoimovel
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - autoimovel-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   api:
     build:
       context: .
       dockerfile: src/AutoImovel.API/Dockerfile
     container_name: autoimovel-api
+    depends_on:
+      postgres_default:
+        condition: service_healthy
     ports:
       - "5003:8080"
     environment:
@@ -37,4 +58,6 @@ services:
 
 networks:
   autoimovel-network:
-    external: true
+
+volumes:
+  postgres_data:

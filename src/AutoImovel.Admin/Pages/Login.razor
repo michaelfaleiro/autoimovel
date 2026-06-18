@@ -1,0 +1,138 @@
+@page "/login"
+@layout LoginLayout
+@using AutoImovel.Admin.Services
+@using Blazored.LocalStorage
+@inject ApiClient Api
+@inject NavigationManager Nav
+@inject ILocalStorageService Storage
+
+<div class="min-h-screen flex items-center justify-center bg-brand-white dark:bg-brand-black px-4 selection:bg-brand-highlight selection:text-white">
+    <div class="w-full max-w-sm animate-fade-in">
+        <div class="text-center mb-10">
+            <h1 class="font-plus text-4xl font-black text-brand-primary dark:text-white tracking-tighter">
+                <span class="text-brand-highlight">AUTO</span>IMÓVEL
+            </h1>
+            <p class="text-xs uppercase font-bold tracking-[0.3em] text-slate-500 mt-2">Admin Control Center</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-brand-primary/20 rounded-3xl shadow-xl p-8">
+            <div class="mb-8">
+                <h2 class="font-plus text-xl font-bold text-brand-primary dark:text-white">Autenticação</h2>
+                <p class="text-xs text-slate-500 mt-1">Acesso restrito a administradores autorizados.</p>
+            </div>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">E-mail Corporativo</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                            <i class="fa-solid fa-envelope"></i>
+                        </span>
+                        <input @bind="_email" type="email"
+                               class="w-full bg-slate-50 dark:bg-brand-black border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent transition-all"
+                               placeholder="admin@autoimovel.com" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Senha de Acesso</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input @bind="_password" type="password"
+                               class="w-full bg-slate-50 dark:bg-brand-black border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent transition-all"
+                               placeholder="••••••••" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_erro))
+                {
+                    <div class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        @_erro
+                    </div>
+                }
+
+                <button @onclick="LoginAsync" disabled="@_isLoading"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center gap-2">
+                    @if (_isLoading)
+                    {
+                        <i class="fa-solid fa-circle-notch animate-spin"></i>
+                        <span>Verificando...</span>
+                    }
+                    else
+                    {
+                        <span>Acessar Painel</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    }
+                </button>
+
+                <div class="pt-4 text-center">
+                    <a href="http://localhost:5002" class="text-xs font-bold text-brand-accent hover:text-brand-secondary transition-colors inline-flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        Ir para Dashboard do Investidor
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 p-5 bg-brand-primary/5 dark:bg-brand-primary/10 border border-brand-primary/10 rounded-2xl">
+            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-brand-primary dark:text-brand-accent mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-key"></i>
+                Ambiente de Demonstração
+            </h4>
+            <div class="space-y-2 text-[11px] text-slate-600 dark:text-slate-400">
+                <p class="flex justify-between items-center">
+                    <span>Admin:</span>
+                    <code class="bg-white dark:bg-brand-black px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800 text-brand-primary dark:text-brand-accent font-bold">admin@autoimovel.com</code>
+                </p>
+                <p class="flex justify-between items-center">
+                    <span>Senha:</span>
+                    <code class="bg-white dark:bg-brand-black px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800 text-brand-primary dark:text-brand-accent font-bold">Admin@123</code>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private bool _isLoading;
+    private string _erro = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Storage.GetItemAsync<string>("autoimovel-admin-token");
+        if (!string.IsNullOrEmpty(token))
+            Nav.NavigateTo("/");
+    }
+
+    private async Task LoginAsync()
+    {
+        _isLoading = true;
+        _erro = string.Empty;
+
+        try
+        {
+            var result = await Api.LoginAsync(_email, _password);
+            if (result.Role != "Admin")
+            {
+                _erro = "Acesso restrito a administradores.";
+                return;
+            }
+            Api.SetToken(result.Token);
+            await Storage.SetItemAsync("autoimovel-admin-token", result.Token);
+            Nav.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _erro = ex.Message.Contains("401") ? "Credenciais inválidas." : ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

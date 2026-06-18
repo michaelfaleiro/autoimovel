@@ -1,0 +1,281 @@
+@page "/veiculos/{Id:guid}"
+@using AutoImovel.Admin.Services
+@using AutoImovel.Shared.Domain.Enums
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<div class="animate-fade-in">
+    <div class="mb-4">
+        <a href="/veiculos" class="text-sm text-sky-600 hover:underline">&larr; Voltar para veículos</a>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="flex items-center justify-center py-12">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+            @_error
+        </div>
+    }
+    else if (_item is not null)
+    {
+        <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
+            <div class="flex items-center gap-3">
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">@_item.Placa</h2>
+                <span class="px-3 py-1 text-sm rounded-full @GetColor(_item.Status)">@_item.Status.ToString()</span>
+            </div>
+            <div class="flex items-center gap-3">
+                @if (_item.Status == StatusVeiculo.Compra || _item.Status == StatusVeiculo.Preparacao)
+                {
+                    <button @onclick="AvancarStatus"
+                            class="px-4 py-2 text-sm font-medium bg-sky-600 hover:bg-sky-700 text-white rounded-lg transition-colors">
+                        @(_item.Status == StatusVeiculo.Compra ? "Iniciar Preparo" : "Disponibilizar")
+                    </button>
+                }
+                @if (_item.Status == StatusVeiculo.Disponivel)
+                {
+                    <a href="/vincular-lastro?veiculoId=@_item.Id"
+                       class="px-4 py-2 text-sm font-medium bg-sky-600 hover:bg-sky-700 text-white rounded-lg transition-colors">
+                        Vincular Lastro
+                    </a>
+                }
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Informações do Veículo</h3>
+            </div>
+            <div class="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Placa</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">@_item.Placa</p>
+                </div>
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Marca/Modelo</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">@_item.MarcaModelo</p>
+                </div>
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Ano</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">@_item.AnoFabricacaoModelo</p>
+                </div>
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">KM</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">@_item.Km.ToString("N0")</p>
+                </div>
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Chassi</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200 font-mono text-xs">@_item.Chassi</p>
+                </div>
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Renavam</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200 font-mono text-xs">@_item.Renavam</p>
+                </div>
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Cor</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">@_item.Cor</p>
+                </div>
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Preço de Compra</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">R$ @_item.PrecoCompra.ToString("N2")</p>
+                </div>
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Custos de Preparação</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">R$ @_item.CustosPreparacao.ToString("N2")</p>
+                </div>
+                @if (_item.PrecoVendaReal.HasValue)
+                {
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Preço de Venda</span>
+                        <p class="font-medium text-slate-800 dark:text-slate-200">R$ @_item.PrecoVendaReal.Value.ToString("N2")</p>
+                    </div>
+                }
+                <div>
+                    <span class="text-slate-500 dark:text-slate-400">Data Compra</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">@_item.DataCompra.ToString("dd/MM/yyyy")</p>
+                </div>
+                @if (_item.DataVenda.HasValue)
+                {
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Data Venda</span>
+                        <p class="font-medium text-slate-800 dark:text-slate-200">@_item.DataVenda.Value.ToString("dd/MM/yyyy")</p>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_item.UrlLaudoCautelar))
+                {
+                    <div class="md:col-span-2">
+                        <span class="text-slate-500 dark:text-slate-400">Laudo Cautelar</span>
+                        <p><a href="@_item.UrlLaudoCautelar" target="_blank" class="text-sky-600 hover:underline font-medium">Ver Laudo Cautelar</a></p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (_item.PrecoVendaReal.HasValue)
+        {
+            var lucro = _item.PrecoVendaReal.Value - (_item.PrecoCompra + _item.CustosPreparacao);
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Resumo Financeiro</h3>
+                </div>
+                <div class="px-6 py-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Preço de Venda</span>
+                        <p class="font-medium text-slate-800 dark:text-slate-200">R$ @_item.PrecoVendaReal.Value.ToString("N2")</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Preço Compra + Custos</span>
+                        <p class="font-medium text-slate-800 dark:text-slate-200">R$ @((_item.PrecoCompra + _item.CustosPreparacao).ToString("N2"))</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Lucro Bruto</span>
+                        <p class="font-bold text-lg @(lucro >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")">
+                            R$ @lucro.ToString("N2")
+                        </p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Alocações</h3>
+            </div>
+            @if (_item.Alocacoes.Count == 0)
+            {
+                <div class="px-6 py-8 text-center text-slate-400">Nenhuma alocação vinculada a este veículo.</div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                <th class="px-4 py-3 text-left font-medium text-slate-500">Investidor</th>
+                                <th class="px-4 py-3 text-right font-medium text-slate-500">Valor Alocado</th>
+                                <th class="px-4 py-3 text-right font-medium text-slate-500">Porcentagem</th>
+                                <th class="px-4 py-3 text-left font-medium text-slate-500">Status</th>
+                                <th class="px-4 py-3 text-left font-medium text-slate-500">Data Alocação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var aloc in _item.Alocacoes)
+                            {
+                                <tr class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                    <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">@aloc.NomeInvestidor</td>
+                                    <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-300">R$ @aloc.ValorAlocado.ToString("N2")</td>
+                                    <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-300">@aloc.Porcentagem.ToString("P2")</td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-1 text-xs rounded-full @GetAlocacaoColor(aloc.Status)">@aloc.Status.ToString()</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300">@aloc.DataAlocacao.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (_item.Fechamento is not null)
+        {
+            var f = _item.Fechamento;
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Fechamento</h3>
+                </div>
+                <div class="px-6 py-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Lucro Bruto</span>
+                        <p class="font-medium text-emerald-600 dark:text-emerald-400">R$ @f.LucroBruto.ToString("N2")</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Taxa Gestão</span>
+                        <p class="font-medium text-slate-800 dark:text-slate-200">R$ @f.TaxaGestao.ToString("N2")</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Taxa Infra</span>
+                        <p class="font-medium text-slate-800 dark:text-slate-200">R$ @f.TaxaInfra.ToString("N2")</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Taxa Performance</span>
+                        <p class="font-medium text-slate-800 dark:text-slate-200">R$ @f.TaxaPerformance.ToString("N2")</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400">Lucro Líquido</span>
+                        <p class="font-medium text-emerald-600 dark:text-emerald-400">R$ @f.LucroLiquido.ToString("N2")</p>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private VeiculoDetalheResponse? _item;
+    private bool _isLoading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        _error = null;
+        try
+        {
+            _item = await Api.GetVeiculoDetalheAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task AvancarStatus()
+    {
+        if (_item is null) return;
+        try
+        {
+            var novoStatus = _item.Status switch
+            {
+                StatusVeiculo.Compra => StatusVeiculo.Preparacao,
+                StatusVeiculo.Preparacao => StatusVeiculo.Disponivel,
+                _ => _item.Status
+            };
+            if (novoStatus == _item.Status) return;
+            await Api.AtualizarStatusVeiculoAsync(_item.Id, novoStatus);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private string GetColor(StatusVeiculo status) => status switch
+    {
+        StatusVeiculo.Compra => "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+        StatusVeiculo.Preparacao => "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        StatusVeiculo.Disponivel => "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        StatusVeiculo.Vendido => "bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300",
+        _ => "bg-slate-100 text-slate-700"
+    };
+
+    private string GetAlocacaoColor(StatusAlocacao status) => status switch
+    {
+        StatusAlocacao.Ativo => "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        StatusAlocacao.Liquidado => "bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300",
+        _ => "bg-slate-100 text-slate-700"
+    };
+}

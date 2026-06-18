@@ -1,0 +1,131 @@
+@page "/vincular-lastro"
+@using AutoImovel.Admin.Services
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<div class="animate-fade-in">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Vincular Lastro (Matchmaking)</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Vincule frações do saldo livre de aportes aos veículos recém-comprados.</p>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Investidor</label>
+                <AutoComplete Items="@_investidores"
+                              Value="@_investidorId"
+                              ValueChanged="@(async v => { _investidorId = v is Guid id ? id : Guid.Empty; await OnInvestidorChanged(); })"
+                              DisplayText="@DisplayInvestidor"
+                              SelectedValue="@(i => i.Id)"
+                              Placeholder="Digite o nome ou CPF do investidor..." />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Aporte (saldo em liquidez)</label>
+                <AutoComplete Items="@_aportes"
+                              Value="@_aporteId"
+                              ValueChanged="@(v => { _aporteId = v is Guid id ? id : Guid.Empty; })"
+                              DisplayText="@DisplayAporte"
+                              SelectedValue="@(a => a.Id)"
+                              Placeholder="Selecione um aporte..." />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Veículo</label>
+                <AutoComplete Items="@_veiculos"
+                              Value="@_veiculoId"
+                              ValueChanged="@(v => { _veiculoId = v is Guid id ? id : Guid.Empty; })"
+                              DisplayText="@DisplayVeiculo"
+                              SelectedValue="@(v => v.Id)"
+                              Placeholder="Digite a placa ou modelo do veículo..." />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor a Alocar</label>
+                <MonetaryInput @bind-Value="_valorAlocado" />
+            </div>
+
+            <button @onclick="Vincular" disabled="@_loading"
+                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+                @(_loading ? "Processando..." : "Vincular Lastro")
+            </button>
+
+            @if (!string.IsNullOrEmpty(_msg))
+            {
+                <div class="p-3 rounded-lg text-sm @(_erro ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400")">
+                    @_msg
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<SelectInvestidor> _investidores = new();
+    private List<SelectAporte> _aportes = new();
+    private List<SelectVeiculo> _veiculos = new();
+    private Guid _investidorId;
+    private Guid _aporteId;
+    private Guid _veiculoId;
+    private decimal _valorAlocado;
+    private bool _loading;
+    private string _msg = "";
+    private bool _erro;
+
+    private string DisplayInvestidor(SelectInvestidor i) => $"{i.NomeCompleto} ({i.CpfCnpj})";
+    private string DisplayAporte(SelectAporte a) => $"R$ {a.SaldoEmLiquidez:N2}";
+    private string DisplayVeiculo(SelectVeiculo v) => $"{v.Placa} - {v.MarcaModelo} (R$ {v.PrecoCompra:N2})";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _investidores = await Api.GetInvestidoresSelectAsync("Aprovado");
+        _veiculos = await Api.GetVeiculosSelectAsync("Disponivel,Preparacao");
+    }
+
+    private async Task OnInvestidorChanged()
+    {
+        _aporteId = Guid.Empty;
+        if (_investidorId != Guid.Empty)
+            _aportes = await Api.GetAportesSelectAsync(_investidorId, "EmLiquidez");
+        else
+            _aportes = new();
+    }
+
+    private async Task Vincular()
+    {
+        _msg = "";
+        _erro = false;
+
+        if (_investidorId == Guid.Empty || _aporteId == Guid.Empty || _veiculoId == Guid.Empty)
+        {
+            _msg = "Selecione todas as opções.";
+            _erro = true;
+            return;
+        }
+
+        if (_valorAlocado <= 0)
+        {
+            _msg = "Valor alocado deve ser maior que zero.";
+            _erro = true;
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            var result = await Api.VincularLastroAsync(new VincularLastroRequest(
+                _investidorId, _aporteId, _veiculoId, _valorAlocado));
+            _msg = $"Lastro vinculado! Alocação ID: {result.Id}";
+        }
+        catch (Exception ex)
+        {
+            _msg = $"Erro: {ex.Message}";
+            _erro = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

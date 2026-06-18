@@ -1,0 +1,197 @@
+@page "/documentos"
+@using AutoImovel.Admin.Services
+@using AutoImovel.Shared.Domain
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<div class="animate-fade-in">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="font-plus text-2xl font-black text-brand-primary-600 dark:text-brand-white">Documentos & Arquivos</h2>
+            <p class="text-sm text-slate-500 mt-1">Gestão de laudos, contratos e relatórios operacionais.</p>
+        </div>
+        <a href="/documentos/novo" class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-highlight-600 hover:bg-brand-highlightLight text-brand-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-brand-highlight-600/20">
+            <i class="fa-solid fa-file-upload"></i>
+            Upload de Arquivo
+        </a>
+    </div>
+
+    <div class="bg-brand-white dark:bg-black rounded-2xl shadow-sm border border-slate-200 dark:border-brand-primary-800 overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200 dark:border-brand-primary-800/20 flex items-center justify-between flex-wrap gap-4 bg-slate-50/50 dark:bg-brand-primary-900/50">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input @bind="_searchVeiculo" @bind:event="oninput"
+                           class="border border-slate-300 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2 text-sm bg-brand-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600 w-64 transition-all"
+                           placeholder="Buscar por placa ou referência..." />
+                </div>
+                <select @bind="_tipoFiltro" @bind:after="ApplyFilters"
+                        class="border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-sm bg-brand-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600 transition-all">
+                    <option value="">Todos os Tipos</option>
+                    <option value="Laudo">Laudo Cautelar</option>
+                    <option value="Contrato">Contrato SCP</option>
+                    <option value="Relatorio">Relatório</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+        </div>
+
+        @if (_loading)
+        {
+            <div class="px-6 py-20 text-center">
+                <div class="animate-spin inline-block w-10 h-10 border-4 border-brand-accent-600 border-t-transparent rounded-full mb-4"></div>
+                <p class="text-slate-400 font-medium">Sincronizando arquivos...</p>
+            </div>
+        }
+        else if (_erro)
+        {
+            <div class="px-6 py-20 text-center">
+                <div class="w-16 h-16 bg-rose-100 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <h4 class="text-slate-800 dark:text-white font-bold">Falha na Conexão</h4>
+                <p class="text-slate-500 text-sm mt-1">Não foi possível carregar o repositório de documentos.</p>
+                <button @onclick="LoadDocumentos" class="mt-6 text-brand-primary-600 dark:text-brand-accent-300 font-bold text-sm hover:underline">Tentar novamente</button>
+            </div>
+        }
+        else if (_documentos.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-brand-primary-800/20 bg-slate-50/50 dark:bg-brand-primary-900/50">
+                            <th class="px-6 py-4 text-left font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Documento</th>
+                            <th class="px-6 py-4 text-left font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Tipo</th>
+                            <th class="px-6 py-4 text-left font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Vínculo</th>
+                            <th class="px-6 py-4 text-left font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Data Upload</th>
+                            <th class="px-6 py-4 text-right font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-brand-primary-900/50">
+                        @foreach (var doc in _documentos)
+                        {
+                            <tr class="group hover:bg-slate-50 dark:hover:bg-brand-primary-900/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                                            <i class="fa-solid fa-file-pdf text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-slate-800 dark:text-slate-200">@doc.Nome</p>
+                                             <a href="@doc.Url" target="_blank" class="text-[10px] text-brand-accent-600 font-bold hover:underline uppercase tracking-widest mt-0.5 inline-block">Visualizar Arquivo</a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-3 py-1 text-[10px] font-black uppercase rounded-full @GetTipoClass(doc.Tipo)">
+                                        @doc.Tipo
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (doc.VeiculoId.HasValue)
+                                    {
+                                        <div class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                                            <i class="fa-solid fa-car-side text-brand-accent/60"></i>
+                                             <a href="/veiculos/@doc.VeiculoId.Value" class="hover:text-brand-primary-600 dark:hover:text-brand-accent-300 transition-colors">Veículo vinculado</a>
+                                        </div>
+                                    }
+                                    @if (doc.InvestidorId.HasValue)
+                                    {
+                                        <div class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                            <i class="fa-solid fa-user-tie text-brand-accent/60"></i>
+                                             <a href="/investidores/@doc.InvestidorId.Value" class="hover:text-brand-primary-600 dark:hover:text-brand-accent-300 transition-colors">Investidor vinculado</a>
+                                        </div>
+                                    }
+                                    @if (!doc.VeiculoId.HasValue && !doc.InvestidorId.HasValue)
+                                    {
+                                        <span class="text-slate-400 text-xs italic">Geral / Operacional</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
+                                    @doc.DataUpload.ToString("dd/MM/yyyy HH:mm")
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button @onclick="() => ExcluirDocumento(doc.Id)"
+                                            class="text-slate-400 hover:text-rose-500 p-2 transition-colors" title="Excluir documento">
+                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="px-6 py-20 text-center">
+                <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h4 class="text-slate-800 dark:text-white font-bold">Nenhum Documento</h4>
+                <p class="text-slate-500 text-sm mt-1">Ainda não há arquivos cadastrados para estes filtros.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<DocumentoItem> _documentos = new();
+    private string _searchVeiculo = string.Empty;
+    private string _tipoFiltro = string.Empty;
+    private bool _loading = true;
+    private bool _erro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDocumentos();
+    }
+
+    private async Task LoadDocumentos()
+    {
+        _loading = true;
+        _erro = false;
+        try
+        {
+            _documentos = await Api.GetDocumentosAsync();
+        }
+        catch (Exception ex)
+        {
+            _erro = true;
+            Console.Error.WriteLine($"Erro ao carregar documentos: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        await LoadDocumentos();
+    }
+
+    private async Task ExcluirDocumento(Guid id)
+    {
+        try
+        {
+            await Api.DeleteDocumentoAsync(id);
+            await LoadDocumentos();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao excluir documento: {ex.Message}");
+        }
+    }
+
+    private string GetTipoClass(string tipo) => tipo switch
+    {
+        "Laudo" => "bg-brand-primary-100 text-brand-primary-600 dark:bg-brand-primary-900/30 dark:text-brand-primary-400",
+        "Contrato" => "bg-brand-secondary-100 text-brand-secondary-600 dark:bg-brand-secondary-900/30 dark:text-brand-secondary-400",
+        "Relatorio" => "bg-brand-accent-100 text-brand-accent-600 dark:bg-brand-accent-900/30 dark:text-brand-accent-400",
+        "Fiscal" => "bg-brand-highlight-100 text-brand-highlight-600 dark:bg-brand-highlight-900/30 dark:text-brand-highlight-400",
+        _ => "bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20"
+    };
+}

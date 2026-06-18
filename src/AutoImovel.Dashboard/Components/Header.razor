@@ -1,0 +1,59 @@
+@using Blazored.LocalStorage
+@inject ILocalStorageService Storage
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold text-sky-600">AutoImóvel</h1>
+                <span class="text-sm text-slate-400 hidden sm:inline">Painel do Investidor</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-slate-500 dark:text-slate-400">@_email</span>
+                <button @onclick="ToggleTheme" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Alternar tema">
+                    @if (_isDark)
+                    {
+                        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    }
+                    else
+                    {
+                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    }
+                </button>
+                <button @onclick="Logout" class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">Sair</button>
+            </div>
+        </div>
+    </div>
+</header>
+
+@code {
+    private bool _isDark;
+    private string _email = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isDark = await Storage.GetItemAsync<bool>("theme");
+        _email = await Storage.GetItemAsync<string>("auth_email") ?? "investidor";
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDark = !_isDark;
+        await Storage.SetItemAsync("theme", _isDark);
+        if (_isDark)
+            await JS.InvokeVoidAsync("document.documentElement.classList.add", "dark");
+        else
+            await JS.InvokeVoidAsync("document.documentElement.classList.remove", "dark");
+    }
+
+    private async Task Logout()
+    {
+        await Storage.RemoveItemAsync("auth_token");
+        await Storage.RemoveItemAsync("auth_email");
+        await Storage.RemoveItemAsync("auth_role");
+        await Storage.RemoveItemAsync("auth_investidor_id");
+        Nav.NavigateTo("/login", true);
+    }
+}

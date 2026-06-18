@@ -1,0 +1,131 @@
+@page "/financeiro"
+@using AutoImovel.Admin.Services
+@inject ApiClient Api
+@implements IDisposable
+
+<div class="animate-fade-in">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Financeiro</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Visão geral do fluxo de caixa e operações</p>
+    </div>
+
+    @if (_data is null)
+    {
+        <div class="flex items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary-600"></div>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-sky-600 dark:text-sky-400">Total Investido (R$)</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">R$ @_data.TotalInvestido.ToString("N2")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-blue-600 dark:text-blue-400">Em Liquidez (R$)</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">R$ @_data.TotalEmLiquidez.ToString("N2")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Total Alocado (R$)</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">R$ @_data.TotalAlocado.ToString("N2")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-amber-600 dark:text-amber-400">Total Vendas (R$)</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">R$ @_data.ValorTotalVendas.ToString("N2")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-purple-600 dark:text-purple-400">Rendimentos Distribuídos (R$)</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">R$ @_data.TotalRendimentosDistribuidos.ToString("N2")</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Investidores</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">@_data.QuantidadeInvestidores.ToString("N0")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Veículos Total</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">@_data.QuantidadeVeiculosTotal.ToString("N0")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Veículos Disponíveis</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">@_data.QuantidadeVeiculosDisponiveis.ToString("N0")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Veículos Alocados</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">@_data.QuantidadeVeiculosAlocados.ToString("N0")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Veículos Vendidos</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">@_data.QuantidadeVeiculosVendidos.ToString("N0")</p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Atividades Recentes</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                            <th class="px-4 py-3 text-left font-medium text-slate-500">Tipo</th>
+                            <th class="px-4 py-3 text-left font-medium text-slate-500">Descrição</th>
+                            <th class="px-4 py-3 text-right font-medium text-slate-500">Valor</th>
+                            <th class="px-4 py-3 text-left font-medium text-slate-500">Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!_data.AtividadesRecentes.Any())
+                        {
+                            <tr><td colspan="4" class="px-4 py-12 text-center text-slate-400">Nenhuma atividade recente.</td></tr>
+                        }
+                        @foreach (var item in _data.AtividadesRecentes)
+                        {
+                            <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">@item.Tipo</td>
+                                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">@item.Descricao</td>
+                                <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-300 font-medium">R$ @item.Valor.ToString("N2")</td>
+                                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">@item.Data.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private AdminFinanceiroResponse? _data;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+
+        try
+        {
+            _data = await Api.GetAdminFinanceiroAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao carregar financeiro: {ex.Message}");
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

@@ -1,0 +1,94 @@
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="relative">
+    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <span class="text-slate-400 sm:text-sm">R$</span>
+    </div>
+    <input type="text"
+           inputmode="decimal"
+           class="@($"w-full border border-slate-300 dark:border-slate-600 rounded-lg pl-10 pr-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 {(Disabled ? "opacity-50 cursor-not-allowed" : "")}")"
+           value="@_displayValue"
+           @onfocus="HandleFocus"
+           @onblur="HandleBlur"
+           @oninput="HandleInput"
+           @onkeydown="HandleKeyDown"
+           placeholder="0,00"
+           disabled="@Disabled" />
+</div>
+
+@code {
+    private string _displayValue = string.Empty;
+    private bool _isFocused;
+
+    [Parameter] public decimal Value { get; set; }
+    [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _displayValue = FormatCurrency(Value);
+    }
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        await base.SetParametersAsync(parameters);
+        if (!_isFocused)
+        {
+            var newValue = parameters.GetValueOrDefault<decimal>(nameof(Value));
+            _displayValue = FormatCurrency(newValue);
+        }
+    }
+
+    private string FormatCurrency(decimal val)
+    {
+        var abs = Math.Abs(val);
+        var inteiro = Math.Floor(abs).ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+        var centavos = ((int)((abs - Math.Floor(abs)) * 100)).ToString("D2");
+        var formatted = $"{inteiro},{centavos}";
+        return val < 0 ? $"-{formatted}" : formatted;
+    }
+
+    private async Task HandleFocus(FocusEventArgs e)
+    {
+        _isFocused = true;
+        var raw = Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+        _displayValue = raw.Replace(".", ",");
+        StateHasChanged();
+    }
+
+    private async Task HandleBlur(FocusEventArgs e)
+    {
+        _isFocused = false;
+        var parsed = _displayValue
+            .Replace("R$", "")
+            .Replace(" ", "")
+            .Replace(".", "")
+            .Replace(",", ".");
+        if (decimal.TryParse(parsed, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var val))
+        {
+            Value = Math.Round(val, 2);
+            await ValueChanged.InvokeAsync(Value);
+        }
+        _displayValue = FormatCurrency(Value);
+        StateHasChanged();
+    }
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        var cleaned = new string(raw.Where(c => char.IsDigit(c) || c == ',').ToArray());
+        var parts = cleaned.Split(',');
+        if (parts.Length > 2) return;
+        if (parts.Length == 2 && parts[1].Length > 2) return;
+        _displayValue = cleaned;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleBlur(new FocusEventArgs());
+        }
+    }
+}

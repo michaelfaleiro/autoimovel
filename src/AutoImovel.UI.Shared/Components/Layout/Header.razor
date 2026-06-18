@@ -1,0 +1,42 @@
+@namespace AutoImovel.UI.Shared.Components.Layout
+
+<header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 sticky top-0 z-10">
+    <div class="flex items-center gap-4">
+        <button @onclick="OnMenuToggle.InvokeAsync" class="lg:hidden p-2 hover:bg-slate-100 rounded-md" title="Menu">
+            ☰
+        </button>
+        <h2 class="text-lg font-semibold text-slate-800">@Title</h2>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <button @onclick="OnThemeToggle.InvokeAsync"
+                class="p-2 hover:bg-slate-100 rounded-md text-slate-600" title="Alternar tema">
+            🌓
+        </button>
+        @if (!string.IsNullOrEmpty(UserName))
+        {
+            <div class="flex items-center gap-2 text-sm text-slate-600">
+                <span class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-xs font-bold">
+                    @UserName[..1].ToUpper()
+                </span>
+                @UserName
+            </div>
+        }
+        @if (ShowLogout)
+        {
+            <button @onclick="OnLogout.InvokeAsync"
+                    class="text-sm text-red-600 hover:text-red-800 font-medium">
+                Sair
+            </button>
+        }
+    </div>
+</header>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string UserName { get; set; } = string.Empty;
+    [Parameter] public bool ShowLogout { get; set; }
+    [Parameter] public EventCallback OnThemeToggle { get; set; }
+    [Parameter] public EventCallback OnMenuToggle { get; set; }
+    [Parameter] public EventCallback OnLogout { get; set; }
+}

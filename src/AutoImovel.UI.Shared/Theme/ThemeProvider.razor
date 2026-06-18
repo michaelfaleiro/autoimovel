@@ -1,0 +1,55 @@
+@using AutoImovel.UI.Shared.Theme
+@inject IJSRuntime JS
+
+<div class="@Class" data-theme="@_currentTheme">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Class { get; set; } = string.Empty;
+
+    private string _currentTheme = "light";
+
+    public event Action? OnThemeChanged;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var saved = await JS.InvokeAsync<string>("localStorage.getItem", "autoimovel-theme");
+            if (!string.IsNullOrEmpty(saved))
+                _currentTheme = saved;
+        }
+        catch
+        {
+            _currentTheme = "light";
+        }
+
+        await ApplyTheme();
+    }
+
+    public async Task SetThemeAsync(string theme)
+    {
+        _currentTheme = theme;
+        await JS.InvokeVoidAsync("localStorage.setItem", "autoimovel-theme", theme);
+        await ApplyTheme();
+        OnThemeChanged?.Invoke();
+    }
+
+    public async Task ToggleAsync()
+    {
+        var next = _currentTheme switch
+        {
+            "light" => "dark",
+            "dark" => "light",
+            _ => "light"
+        };
+        await SetThemeAsync(next);
+    }
+
+    private async Task ApplyTheme()
+    {
+        await JS.InvokeVoidAsync("eval", $"document.documentElement.setAttribute('data-theme', '{_currentTheme}')");
+    }
+}

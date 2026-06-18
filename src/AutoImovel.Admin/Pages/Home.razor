@@ -1,0 +1,102 @@
+@page "/"
+@using Blazored.LocalStorage
+@inject ILocalStorageService Storage
+@inject NavigationManager Nav
+
+<div class="animate-fade-in">
+    <div class="mb-8">
+        <h2 class="font-plus text-3xl font-black text-brand-primary-600 dark:text-brand-white tracking-tight">Painel Administrativo</h2>
+        <p class="text-slate-500 dark:text-slate-400 mt-2 text-lg">Gerencie a operação AutoImóvel com precisão e controle total.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <a href="/investidores" class="group block bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-14 h-14 rounded-2xl bg-brand-primary-100 dark:bg-brand-primary-800/20 flex items-center justify-center group-hover:bg-brand-primary-600 group-hover:text-brand-white transition-colors text-brand-primary-600 dark:text-brand-accent-300">
+                    <i class="fa-solid fa-users text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-plus font-bold text-brand-primary-600 dark:text-brand-white text-xl">Investidores</h3>
+                    <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Gestão de CRM</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Qualifique investidores, aprove cadastros e gerencie a base de cotistas SCP.</p>
+        </a>
+
+        <a href="/aportes" class="group block bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-14 h-14 rounded-2xl bg-brand-highlight-100 dark:bg-brand-highlight-800/20 flex items-center justify-center group-hover:bg-brand-highlight-600 group-hover:text-brand-white transition-colors text-brand-highlight-600">
+                    <i class="fa-solid fa-money-bill-transfer text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-plus font-bold text-brand-primary-600 dark:text-brand-white text-xl">Aportes</h3>
+                    <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Fluxo de Capital</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Registre entradas de capital, valide comprovantes e gerencie o saldo dos investidores.</p>
+        </a>
+
+        <a href="/veiculos" class="group block bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-14 h-14 rounded-2xl bg-brand-accent-100 dark:bg-brand-accent-800/20 flex items-center justify-center group-hover:bg-brand-accent-600 group-hover:text-brand-white transition-colors text-brand-accent-600">
+                    <i class="fa-solid fa-car-side text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-plus font-bold text-brand-primary-600 dark:text-brand-white text-xl">Veículos</h3>
+                    <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Gestão de Ativos</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Cadastre novos veículos, gerencie o estoque e acompanhe o status de preparação.</p>
+        </a>
+
+        <a href="/vincular-lastro" class="group block bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-14 h-14 rounded-2xl bg-indigo-500/5 dark:bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors text-indigo-500">
+                    <i class="fa-solid fa-link text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-plus font-bold text-brand-primary-600 dark:text-brand-white text-xl">Vincular Lastro</h3>
+                    <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Matchmaking</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Vincule o capital dos investidores aos veículos em estoque (Lastro Real).</p>
+        </a>
+
+        <a href="/fechamentos" class="group block bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors text-emerald-500">
+                    <i class="fa-solid fa-circle-check text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-plus font-bold text-brand-primary-600 dark:text-brand-white text-xl">Fechamentos</h3>
+                    <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Ciclo de Venda</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Feche vendas de veículos e calcule automaticamente o split de lucros.</p>
+        </a>
+
+        <a href="/financeiro" class="group block bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-14 h-14 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-colors text-amber-500">
+                    <i class="fa-solid fa-chart-line text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-plus font-bold text-brand-primary-600 dark:text-brand-white text-xl">Financeiro</h3>
+                    <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">BI & Dashboards</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Visão macro do fluxo de caixa, rentabilidade média e saúde da operação.</p>
+        </a>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Storage.GetItemAsync<string>("autoimovel-admin-token");
+        if (string.IsNullOrEmpty(token))
+        {
+            Nav.NavigateTo("/login", forceLoad: true);
+        }
+    }
+}

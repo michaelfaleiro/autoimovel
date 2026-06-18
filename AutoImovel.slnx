@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AutoImovel.Admin/AutoImovel.Admin.csproj" />
+    <Project Path="src/AutoImovel.API/AutoImovel.API.csproj" />
+    <Project Path="src/AutoImovel.Dashboard/AutoImovel.Dashboard.csproj" />
+    <Project Path="src/AutoImovel.Shared/AutoImovel.Shared.csproj" />
+    <Project Path="src/AutoImovel.UI.Shared/AutoImovel.UI.Shared.csproj" />
+  </Folder>
+</Solution>

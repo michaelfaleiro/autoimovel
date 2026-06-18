@@ -1,0 +1,21 @@
+﻿@inherits LayoutComponentBase
+@inject AutoImovel.Dashboard.Services.ThemeService Theme
+
+<div class="@($"min-h-screen { (Theme.IsDark ? "dark" : "") }")" data-theme="@(Theme.IsDark ? "dark" : "light")">
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased transition-colors duration-300">
+        @Body
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Theme.InitAsync();
+        Theme.OnThemeChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Theme.OnThemeChanged -= StateHasChanged;
+    }
+}

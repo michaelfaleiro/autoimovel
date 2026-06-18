@@ -1,0 +1,121 @@
+@page "/login"
+@layout AutoImovel.Dashboard.Layout.MainLayout
+@using Blazored.LocalStorage
+@inject ApiClient Api
+@inject NavigationManager Nav
+@inject ILocalStorageService Storage
+
+<div class="min-h-screen flex items-center justify-center bg-black px-4 selection:bg-brand-highlight selection:text-white">
+    <div class="w-full max-w-sm animate-fade-in">
+        <div class="text-center mb-10">
+            <h1 class="font-plus text-4xl font-black text-white tracking-tighter">
+                <span class="text-brand-highlight">AUTO</span>IMÓVEL
+            </h1>
+            <p class="text-xs uppercase font-bold tracking-[0.3em] text-slate-500 mt-2">Portal do Investidor</p>
+        </div>
+
+        <div class="bg-brand-secondary-500/20 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl p-8">
+            <div class="mb-8">
+                <h2 class="font-plus text-xl font-bold text-white">Bem-vindo de volta</h2>
+                <p class="text-xs text-slate-400 mt-1">Acompanhe seu patrimônio e lastro em tempo real.</p>
+            </div>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Seu E-mail</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                            <i class="fa-solid fa-envelope"></i>
+                        </span>
+                        <input @bind="_email" type="email"
+                               class="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-highlight-600 transition-all"
+                               placeholder="investidor@exemplo.com" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Sua Senha</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input @bind="_password" type="password"
+                               class="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-highlight-600 transition-all"
+                               placeholder="••••••••" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <div class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        @_error
+                    </div>
+                }
+
+                <button @onclick="LoginAsync" disabled="@_loading"
+                        class="w-full bg-brand-highlight-600 hover:bg-brand-highlightLight text-brand-primary-600 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-brand-highlight-600/10 disabled:opacity-50 flex items-center justify-center gap-2">
+                    @if (_loading)
+                    {
+                        <i class="fa-solid fa-circle-notch animate-spin"></i>
+                        <span>Validando...</span>
+                    }
+                    else
+                    {
+                        <span>Acessar Carteira</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    }
+                </button>
+
+                <div class="pt-4 text-center">
+                    <p class="text-xs text-slate-500">
+                        Não possui uma conta?
+                        <a href="#" class="text-brand-highlight-600 font-bold hover:underline">Solicite seu convite</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 p-5 bg-white/5 border border-white/5 rounded-2xl">
+            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-brand-highlight-600 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved"></i>
+                Segurança & Lastro
+            </h4>
+            <p class="text-[10px] text-slate-500 leading-relaxed">
+                Toda operação é lastreada em ativos físicos reais. Sua senha é criptografada e o acesso é protegido por protocolos de segurança bancária.
+            </p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private string _error = string.Empty;
+    private bool _loading;
+
+    private async Task LoginAsync()
+    {
+        _error = string.Empty;
+        _loading = true;
+        try
+        {
+            var result = await Api.LoginAsync(_email, _password);
+            Api.SetToken(result.Token);
+            await Storage.SetItemAsync("auth_token", result.Token);
+            await Storage.SetItemAsync("auth_email", result.Email);
+            await Storage.SetItemAsync("auth_role", result.Role);
+            if (result.InvestidorId.HasValue)
+                await Storage.SetItemAsync("auth_investidor_id", result.InvestidorId.Value.ToString());
+            Nav.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message.Contains("401") ? "E-mail ou senha inválidos." : "Erro ao conectar com o servidor.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

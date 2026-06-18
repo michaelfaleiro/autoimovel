@@ -1,0 +1,115 @@
+@using AutoImovel.Admin.Services
+@using Blazored.LocalStorage
+@inject ThemeService Theme
+@inject ILocalStorageService Storage
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="@($"fixed inset-y-0 left-0 z-40 w-64 bg-[#1a3a5c] dark:bg-slate-950 border-r border-slate-700 dark:border-slate-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 {(_isOpen ? "translate-x-0" : "-translate-x-full")}")">
+    <div class="flex flex-col h-full">
+        <div class="flex items-center justify-between px-4 h-16 border-b border-slate-700">
+            <div class="bg-white/10 rounded-lg p-1">
+                <img src="images/logo.png?v=2" alt="AutoImóvel Logo" class="h-12 w-auto object-contain" />
+            </div>
+            <button @onclick="() => _isOpen = false" class="lg:hidden p-1 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            @foreach (var item in NavItems)
+            {
+                var currentPage = Nav.ToAbsoluteUri(Nav.Uri).AbsolutePath.TrimEnd('/');
+                var isActive = item.Href == "/"
+                    ? currentPage == "" || currentPage == "/"
+                    : currentPage.StartsWith(item.Href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+                    <a href="@item.Href"
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 @(isActive ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "text-white/80 hover:text-white hover:bg-white/20")">
+                        <i class="@item.Icon text-base w-5 text-center"></i>
+                        @item.Label
+                    </a>
+            }
+        </nav>
+
+        <div class="px-4 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+            <div class="flex items-center gap-3 px-2">
+                <div class="w-8 h-8 rounded-full bg-brand-gold flex items-center justify-center text-brand-navy text-sm font-bold">
+                    A
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm text-slate-700 dark:text-slate-300 truncate">Admin</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 mt-3 px-2">
+                <button @onclick="ToggleTheme" class="flex-1 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                    @(Theme.IsDark ? "☀️ Claro" : "🌙 Escuro")
+                </button>
+                <button @onclick="Logout" class="px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors">
+                    Sair
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_isOpen)
+{
+    <div @onclick="() => _isOpen = false" class="fixed inset-0 z-30 bg-black/50 lg:hidden"></div>
+}
+
+@implements IDisposable
+
+@code {
+    private bool _isOpen;
+
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    private static readonly List<NavItem> NavItems = new()
+    {
+        new() { Label = "Início", Icon = "fa-solid fa-house", Href = "/" },
+        new() { Label = "Investidores", Icon = "fa-solid fa-users", Href = "/investidores" },
+        new() { Label = "Aportes", Icon = "fa-solid fa-money-bill-transfer", Href = "/aportes" },
+        new() { Label = "Veículos", Icon = "fa-solid fa-truck", Href = "/veiculos" },
+        new() { Label = "Vincular Lastro", Icon = "fa-solid fa-link", Href = "/vincular-lastro" },
+        new() { Label = "Fechamentos", Icon = "fa-solid fa-circle-check", Href = "/fechamentos" },
+        new() { Label = "Financeiro", Icon = "fa-solid fa-chart-line", Href = "/financeiro" },
+        new() { Label = "Documentos", Icon = "fa-solid fa-file-pdf", Href = "/documentos" },
+    };
+
+    public async Task Toggle()
+    {
+        _isOpen = !_isOpen;
+        StateHasChanged();
+    }
+
+    private async Task ToggleTheme()
+    {
+        await Theme.ToggleThemeAsync();
+    }
+
+    private async Task Logout()
+    {
+        await Storage.RemoveItemAsync("autoimovel-admin-token");
+        Nav.NavigateTo("/login", true);
+    }
+
+    private class NavItem
+    {
+        public string Label { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Href { get; set; } = "";
+    }
+}

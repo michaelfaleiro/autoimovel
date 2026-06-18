@@ -1,0 +1,109 @@
+@using Blazored.LocalStorage
+@inject ILocalStorageService Storage
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="@($"fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto {( _isOpen ? "translate-x-0" : "-translate-x-full")}")">
+    <div class="flex flex-col h-full">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-800">
+            <div>
+                <h1 class="text-xl font-bold text-amber-400">AutoImóvel</h1>
+                <p class="text-xs text-slate-500">Painel do Investidor</p>
+            </div>
+            <button @onclick="() => _isOpen = false" class="lg:hidden p-1 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            @foreach (var item in NavItems)
+            {
+                var isActive = Nav.Uri.EndsWith(item.Href, StringComparison.OrdinalIgnoreCase)
+                    || (item.Href == "/" && Nav.Uri == Nav.BaseUri);
+                <a href="@item.Href"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors @(isActive ? "bg-sky-600/20 text-sky-400" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800")">
+                    <span class="text-lg">@item.Icon</span>
+                    @item.Label
+                </a>
+            }
+        </nav>
+
+        <div class="px-4 py-4 border-t border-slate-800">
+            <div class="flex items-center gap-3 px-2">
+                <div class="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white text-sm font-medium">
+                    @(_email.Length > 0 ? _email[..1].ToUpper() : "I")
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm text-slate-300 truncate">@_email</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 mt-3 px-2">
+                <button @onclick="ToggleTheme" class="flex-1 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors">
+                    @(_isDark ? "☀️ Claro" : "🌙 Escuro")
+                </button>
+                <button @onclick="Logout" class="px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors">
+                    Sair
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_isOpen)
+{
+    <div @onclick="() => _isOpen = false" class="fixed inset-0 z-30 bg-black/50 lg:hidden"></div>
+}
+
+@code {
+    private bool _isDark;
+    private bool _isOpen;
+    private string _email = string.Empty;
+
+    private static readonly List<NavItem> NavItems = new()
+    {
+        new() { Label = "Início", Icon = "🏠", Href = "/" },
+        new() { Label = "Meu Patrimônio", Icon = "📊", Href = "/" },
+        new() { Label = "Veículos Vinculados", Icon = "🚗", Href = "/veiculos" },
+        new() { Label = "Extrato de Rendimentos", Icon = "💰", Href = "/extrato" },
+    };
+
+    [Parameter] public EventCallback OnToggle { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isDark = await Storage.GetItemAsync<bool>("theme");
+        _email = await Storage.GetItemAsync<string>("auth_email") ?? "investidor";
+    }
+
+    public async Task Toggle()
+    {
+        _isOpen = !_isOpen;
+        StateHasChanged();
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDark = !_isDark;
+        await Storage.SetItemAsync("theme", _isDark);
+        if (_isDark)
+            await JS.InvokeVoidAsync("document.documentElement.classList.add", "dark");
+        else
+            await JS.InvokeVoidAsync("document.documentElement.classList.remove", "dark");
+    }
+
+    private async Task Logout()
+    {
+        await Storage.RemoveItemAsync("auth_token");
+        await Storage.RemoveItemAsync("auth_email");
+        await Storage.RemoveItemAsync("auth_role");
+        await Storage.RemoveItemAsync("auth_investidor_id");
+        Nav.NavigateTo("/login", true);
+    }
+
+    private class NavItem
+    {
+        public string Label { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Href { get; set; } = "";
+    }
+}

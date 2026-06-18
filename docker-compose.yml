@@ -1,0 +1,40 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/AutoImovel.API/Dockerfile
+    container_name: autoimovel-api
+    ports:
+      - "5003:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres_default;Port=5432;Database=autoimovel;Username=postgres;Password=postgres
+    networks:
+      - autoimovel-network
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: src/AutoImovel.Admin/Dockerfile
+    container_name: autoimovel-admin
+    ports:
+      - "5001:80"
+    networks:
+      - autoimovel-network
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: src/AutoImovel.Dashboard/Dockerfile
+    container_name: autoimovel-dashboard
+    ports:
+      - "5002:80"
+    networks:
+      - autoimovel-network
+    restart: unless-stopped
+
+networks:
+  autoimovel-network:
+    external: true

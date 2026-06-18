@@ -1,0 +1,731 @@
+﻿@page "/"
+@using Blazored.LocalStorage
+@using AutoImovel.Dashboard.Services
+@inject ApiClient Api
+@inject ILocalStorageService Storage
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject ThemeService Theme
+
+<!-- ===== HEADER ===== -->
+<header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3 md:px-8 transition-colors">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center self-center md:self-start space-x-3">
+            <img src="/images/logo.png" alt="AutoImóvel Logo" class="h-12 w-auto object-contain" />
+            <div class="hidden md:block">
+                <div class="flex items-center space-x-2">
+                    <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-brand-gold/10 text-brand-gold border border-brand-gold/20">Investidor</span>
+                </div>
+            </div>
+        </div>
+
+        @if (_patrimonio is not null)
+        {
+            <div class="flex flex-wrap items-center gap-3 bg-slate-100 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200 dark:border-slate-700 self-start md:self-auto">
+                <div class="flex items-center space-x-3 px-2">
+                    <div class="h-9 w-9 rounded-full bg-slate-200 dark:bg-slate-700 border border-brand-gold/50 flex items-center justify-center font-bold text-brand-gold text-sm">
+                        @GetInitials(_patrimonio.NomeInvestidor)
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">@_patrimonio.NomeInvestidor</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400">SCP: <span class="font-mono text-brand-gold">SCP-@_codigoSCP</span></p>
+                    </div>
+                </div>
+                <div class="h-6 w-px bg-slate-300 dark:bg-slate-800 hidden sm:block"></div>
+                <div class="flex items-center space-x-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-xl text-xs font-medium">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>SCP ATIVA</span>
+                </div>
+                <button @onclick="ToggleTheme" class="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 px-3 py-1.5 rounded-xl transition flex items-center space-x-1">
+                    <i class="fa-solid @(Theme.IsDark ? "fa-sun" : "fa-moon")"></i>
+                    <span>@(Theme.IsDark ? "Claro" : "Escuro")</span>
+                </button>
+                <button @onclick="Logout" class="text-xs bg-red-500/10 text-red-500 dark:text-red-400 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-xl transition flex items-center space-x-1">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sair</span>
+                </button>
+            </div>
+        }
+    </div>
+</header>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-8 flex flex-col gap-6">
+
+    @if (_patrimonio is not null)
+    {
+        <!-- Hero Block -->
+        <div class="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
+            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-brand-gold/5 rounded-full blur-2xl"></div>
+            <div class="absolute -left-10 -top-10 w-40 h-40 bg-blue-500/5 rounded-full blur-2xl"></div>
+
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                    <h1 class="font-plus text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Visão Geral da Cota</h1>
+                    <p class="text-slate-600 dark:text-slate-400 max-w-2xl text-sm leading-relaxed">
+                        Acompanhe em tempo real a alocação do seu capital em ativos físicos seminovos de altíssima liquidez. Toda a segurança do lastro físico com gestão estratégica de liquidez pela administradora.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button @onclick='() => _activeTab = "simulation"' class="bg-brand-highlight-600 hover:bg-brand-highlightLight text-brand-primary-600 font-bold text-xs px-4 py-3 rounded-xl transition duration-200 flex items-center space-x-2 shadow-lg shadow-brand-highlight-600/15">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span>Simular Reinvestimento</span>
+                    </button>
+                    <button @onclick='() => _activeTab = "assets"' class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 transition duration-200 flex items-center space-x-2">
+                        <i class="fa-solid fa-car"></i>
+                        <span>Ver Carros Alocados</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-slate-700 transition duration-200 shadow-sm dark:shadow-lg">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold tracking-wider">Patrimônio da Cota</span>
+                    <div class="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <i class="fa-solid fa-wallet text-sm"></i>
+                    </div>
+                </div>
+                <h3 class="font-plus text-2xl font-black text-slate-900 dark:text-white tracking-tight">R$ @_patrimonio.PatrimonioTotal.ToString("N2")</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center space-x-1">
+                    <span class="text-emerald-600 dark:text-emerald-400 font-bold"><i class="fa-solid fa-circle-check"></i> 1 Cota</span>
+                    <span>integralizada na SCP</span>
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-slate-700 transition duration-200 shadow-sm dark:shadow-lg">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold tracking-wider">Em Caixa (D+1)</span>
+                    <div class="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                        <i class="fa-solid fa-circle-dollar-to-slot text-sm"></i>
+                    </div>
+                </div>
+                <h3 class="font-plus text-2xl font-black text-slate-900 dark:text-white tracking-tight">R$ @_patrimonio.CapitalEmLiquidez.ToString("N2")</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center space-x-1">
+                    <span class="text-emerald-600 dark:text-emerald-400 font-bold"><i class="fa-solid fa-chart-line"></i> Rendendo</span>
+                    <span>em conta de liquidez</span>
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-slate-700 transition duration-200 shadow-sm dark:shadow-lg">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold tracking-wider">Alocado em Carros</span>
+                    <div class="h-8 w-8 rounded-lg bg-brand-highlight-100/10 flex items-center justify-center text-brand-highlight-600">
+                        <i class="fa-solid fa-shield-halved text-sm"></i>
+                    </div>
+                </div>
+                <h3 class="font-plus text-2xl font-black text-slate-900 dark:text-white tracking-tight">R$ @_patrimonio.CapitalAlocado.ToString("N2")</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center space-x-1">
+                    <span class="text-brand-highlight-600 font-bold">100% Lastreado</span>
+                    <span>em @_veiculos.Count veículo(s) premium</span>
+                </p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-slate-700 transition duration-200 shadow-sm dark:shadow-lg">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold tracking-wider">Rendimento Alvo</span>
+                    <div class="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-500">
+                        <i class="fa-solid fa-percent text-sm"></i>
+                    </div>
+                </div>
+                <h3 class="font-plus text-2xl font-black text-slate-900 dark:text-white tracking-tight">3,0% a 4,0% <span class="text-xs font-normal text-slate-500 dark:text-slate-400">a.m.</span></h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center space-x-1">
+                    <span class="text-emerald-600 dark:text-emerald-400 font-bold">Líquido</span>
+                    <span>Isenção de IR na SCP</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="border-b border-slate-200 dark:border-slate-800/60 flex space-x-1 overflow-x-auto pb-1">
+                    <button @onclick='() => _activeTab = "overview"' class="px-5 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-150 @(_activeTab == "overview" ? "border-b-2 border-brand-highlight-600 text-brand-highlight-600" : "border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700")">
+                <i class="fa-solid fa-chart-pie mr-2"></i>Distribuição & Fluxo
+            </button>
+                <button @onclick='() => _activeTab = "assets"' class="px-5 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-150 @(_activeTab == "assets" ? "border-b-2 border-brand-highlight-600 text-brand-highlight-600" : "border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700")">
+                <i class="fa-solid fa-car-side mr-2"></i>Estoque Alocado <span class="ml-1 bg-brand-highlight-100/20 text-brand-highlight-600 text-[10px] px-1.5 py-0.5 rounded font-bold">@_veiculos.Count</span>
+            </button>
+                <button @onclick='() => _activeTab = "simulation"' class="px-5 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-150 @(_activeTab == "simulation" ? "border-b-2 border-brand-highlight-600 text-brand-highlight-600" : "border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700")">
+                <i class="fa-solid fa-calculator mr-2"></i>Simulador Composto
+            </button>
+                <button @onclick='() => _activeTab = "documents"' class="px-5 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-150 @(_activeTab == "documents" ? "border-b-2 border-brand-highlight-600 text-brand-highlight-600" : "border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700")">
+                <i class="fa-solid fa-folder-open mr-2"></i>Documentos & Relatórios
+            </button>
+        </div>
+
+        <!-- ===== TAB: OVERVIEW ===== -->
+        @if (_activeTab == "overview")
+        {
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
+                <div class="lg:col-span-5 bg-white dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Status de Alocação de Capital</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Distribuição atual do capital investido de R$ @_patrimonio.PatrimonioTotal.ToString("N2")</p>
+                    </div>
+
+                    <div class="my-8 flex flex-col items-center justify-center">
+                        <div class="w-full bg-slate-200 dark:bg-slate-800 h-8 rounded-2xl overflow-hidden flex shadow-inner">
+                            <div class="bg-gradient-to-r from-blue-600 to-indigo-500 h-full flex items-center justify-center font-bold text-[11px] text-white transition-all duration-500" style="width: @PercentualEmCaixa%">@PercentualEmCaixa%</div>
+                            <div class="bg-gradient-to-r from-brand-highlight-600 to-yellow-500 h-full flex items-center justify-center font-bold text-[11px] text-brand-primary-600 transition-all duration-500" style="width: @PercentualAlocado%">@PercentualAlocado%</div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 w-full mt-6">
+                            <div class="bg-blue-50 dark:bg-brand-primary-600/60 p-3 rounded-2xl border border-blue-100 dark:border-slate-800">
+                                <div class="flex items-center space-x-2 text-blue-600 dark:text-blue-400 mb-1">
+                                    <span class="h-3 w-3 rounded-full bg-blue-500"></span>
+                                    <span class="text-xs font-semibold">Em Caixa</span>
+                                </div>
+                                <p class="text-lg font-bold text-slate-900 dark:text-white">R$ @_patrimonio.CapitalEmLiquidez.ToString("N2")</p>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-500">Rendimento D+1</span>
+                            </div>
+                            <div class="bg-amber-50 dark:bg-brand-primary-600/60 p-3 rounded-2xl border border-amber-100 dark:border-slate-800">
+                                <div class="flex items-center space-x-2 text-brand-highlight-600 dark:text-brand-highlight-600 mb-1">
+                                    <span class="h-3 w-3 rounded-full bg-brand-highlight-600"></span>
+                                    <span class="text-xs font-semibold">Alocado</span>
+                                </div>
+                                <p class="text-lg font-bold text-slate-900 dark:text-white">R$ @_patrimonio.CapitalAlocado.ToString("N2")</p>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-500">Lastro Real (Carros)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-brand-highlight-600/5 dark:bg-brand-highlight-600/10 border border-brand-highlight-600/20 dark:border-brand-highlight-600/10 p-4 rounded-2xl flex items-start space-x-3">
+                        <i class="fa-solid fa-circle-info text-brand-highlight-600 mt-0.5"></i>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            <strong class="text-brand-highlight-600 font-semibold">Regra de Giro:</strong> Enquanto o capital não é alocado na compra de veículos premium da Garage 345, ele permanece rendendo com liquidez em investimentos conservadores.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 bg-white dark:bg-brand-secondary-500/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Ciclo de Eficiência do Seu Capital</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Como o dinheiro transita de forma blindada de ponta a ponta na operação</p>
+
+                    <div class="relative pl-6 border-l-2 border-slate-200 dark:border-slate-800 space-y-6">
+                        <div class="relative">
+                            <span class="absolute -left-[31px] top-0.5 bg-blue-600 h-4 w-4 rounded-full border-4 border-slate-200 dark:border-brand-primary-600"></span>
+                            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">1. Formalização Legal (SCP)</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Sua cota de R$ @_patrimonio.PatrimonioTotal.ToString("N2") entra de forma protegida e com blindagem jurídica no Fundo via Sociedade em Conta de Participação.</p>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute -left-[31px] top-0.5 bg-indigo-500 h-4 w-4 rounded-full border-4 border-slate-200 dark:border-brand-primary-600"></span>
+                            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">2. Gestão de Caixa & Inteligência de Compra</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">O time busca oportunidades subavaliadas no mercado de seminovos premium. Capital em caixa rende em liquidez D+1.</p>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute -left-[31px] top-0.5 bg-brand-highlight-600 h-4 w-4 rounded-full border-4 border-slate-200 dark:border-brand-primary-600"></span>
+                            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">3. Laudo Cautelar & Aquisição do Ativo</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Auditoria mecânica e documental rigorosa de procedência. Compra do ativo físico. Seu dinheiro vira um veículo real rastreável.</p>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute -left-[31px] top-0.5 bg-emerald-500 h-4 w-4 rounded-full border-4 border-slate-200 dark:border-brand-primary"></span>
+                            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">4. Venda & Distribuição de Dividendos</h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">O veículo é preparado e vendido em menos de 45 dias com margem histórica média de 12%. O lucro retorna e acumula no seu saldo.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ===== TAB: ASSETS ===== -->
+        @if (_activeTab == "assets")
+        {
+            <div class="flex flex-col gap-6 animate-fade-in">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Veículos Ativos de Co-Propriedade</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Ativos físicos que lastreiam o seu capital neste exato momento</p>
+                    </div>
+                    <div class="flex items-center space-x-4 text-xs">
+                        <span class="flex items-center space-x-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><span class="text-slate-500 dark:text-slate-400">Preparação</span></span>
+                        <span class="flex items-center space-x-1"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span><span class="text-slate-500 dark:text-slate-400">À Venda</span></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    @foreach (var v in _veiculos)
+                    {
+                        var isVenda = v.StatusVeiculo == StatusVeiculo.Disponivel;
+                        var statusLabel = isVenda ? "À VENDA" : "PREPARAÇÃO";
+                        var diasNoPatio = (DateTime.UtcNow - v.DataAlocacao).Days;
+                        var percentPatio = Math.Min((double)diasNoPatio / 45.0 * 100.0, 100.0);
+
+                        <div class="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-sm dark:shadow-lg">
+                            <div class="p-6 bg-gradient-to-br from-brand-primary-600 to-brand-secondary-600 border-b border-slate-200 dark:border-slate-800 flex justify-between items-start">
+                                <div>
+                                    <span class="@BadgeClass(isVenda)">@statusLabel</span>
+                                    <h4 class="text-xl font-bold text-white mt-3">@v.MarcaModelo</h4>
+                                    <p class="text-xs text-white/80">Ano/Modelo: @v.AnoFabricacaoModelo</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[10px] text-white/70 uppercase font-bold tracking-wider">Seu Aporte Alocado</p>
+                                    <p class="text-lg font-black text-brand-highlight-600">R$ @v.ValorAlocado.ToString("N2")</p>
+                                    <p class="text-[10px] text-white/60">Cota de Participação</p>
+                                </div>
+                            </div>
+
+                            <div class="p-6 space-y-4 flex-grow">
+                                <div class="grid grid-cols-2 gap-4 text-xs">
+                                    <div>
+                                        <span class="text-slate-500 dark:text-slate-400">Placa do Carro</span>
+                                        <p class="font-bold text-slate-900 dark:text-white tracking-widest">@v.Placa</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-500 dark:text-slate-400">KM Rodados</span>
+                                        <p class="font-bold text-slate-900 dark:text-white">@v.Km.ToString("N0") km</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1.5">
+                                        <span class="text-slate-500 dark:text-slate-400 font-medium">Tempo no Pátio (Garage 345)</span>
+                                        <span class="@TextColorClass(isVenda) font-bold">@diasNoPatio Dias <span class="text-slate-400 dark:text-slate-500 font-normal">/ Meta &lt; 45d</span></span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                                        <div class="@ProgressClass(isVenda) h-full rounded-full" style="width: @percentPatio.ToString("F1")%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                            <i class="fa-solid fa-file-shield"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Laudo Cautelar Digital</p>
+                                            <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check"></i> 100% Aprovado & Estrutural Limpo</p>
+                                        </div>
+                                    </div>
+                                    <button @onclick='() => OpenLaudo(v.MarcaModelo, v.Placa)' class="text-xs bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 transition">
+                                        Ver Laudo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- ===== TAB: SIMULATOR ===== -->
+        @if (_activeTab == "simulation")
+        {
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
+                <div class="lg:col-span-5 bg-white dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Simulador de Acumulação Composta</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Descubra o efeito de dobrar o capital em 3 anos com ciclos rápidos</p>
+                    </div>
+
+                    <div class="my-6 space-y-6">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Aporte Inicial</span>
+                                <span class="text-sm font-black text-brand-highlight-600">R$ @_simCapital.ToString("N2")</span>
+                            </div>
+                            <input type="range" min="100000" max="1000000" step="50000" value="@_simCapital"
+                                    @oninput='(e => { _simCapital = int.Parse(e.Value?.ToString() ?? "100000"); CalcularSimulacao(); })'
+                                    class="w-full accent-brand-highlight-600 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-500 mt-1">
+                                <span>Mín. R$ 100k</span>
+                                <span>Máx. R$ 1M</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Tempo de Acumulação</span>
+                                <span class="text-sm font-black text-brand-highlight-600">@_simMeses Meses <span class="text-slate-400 dark:text-slate-400 font-normal">(@(_simMeses / 12) anos)</span></span>
+                            </div>
+                            <input type="range" min="6" max="36" step="6" value="@_simMeses"
+                                    @oninput='(e => { _simMeses = int.Parse(e.Value?.ToString() ?? "36"); CalcularSimulacao(); })'
+                                    class="w-full accent-brand-highlight-600 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-500 mt-1">
+                                <span>6 meses</span>
+                                <span>36 meses (3 anos)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500 dark:text-slate-400">Rendimento Base</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">3,0% ao mês líquido</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500 dark:text-slate-400">Reinvestimento Automático</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">Ativado (Composto)</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500 dark:text-slate-400">Isenção de Impostos</span>
+                            <span class="font-bold text-slate-900 dark:text-white">Sim (Através de SCP)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 bg-white dark:bg-brand-secondary-500/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Resultado Estimado da Projeção</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Projeção matemática baseada em premissas conservadoras e giro real auditado.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-blue-50 dark:bg-brand-primary-600/60 p-4 rounded-2xl border border-blue-100 dark:border-slate-800">
+                            <span class="text-[10px] text-slate-500 dark:text-slate-500 uppercase font-bold tracking-wider">Capital Total Reconstituído</span>
+                            <h4 class="text-3xl font-black text-brand-highlight-600 mt-2">R$ @_simCapitalFinal.ToString("N2")</h4>
+                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-arrow-trend-up"></i> Juros compostos constantes</span>
+                        </div>
+                        <div class="bg-amber-50 dark:bg-brand-primary-600/60 p-4 rounded-2xl border border-amber-100 dark:border-slate-800">
+                            <span class="text-[10px] text-slate-500 dark:text-slate-500 uppercase font-bold tracking-wider">Lucro Líquido Acumulado</span>
+                            <h4 class="text-3xl font-black text-slate-900 dark:text-white mt-2">R$ @_simLucroTotal.ToString("N2")</h4>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-1"><strong class="text-brand-highlight-600">@_simMultiplo.ToString("F1")x</strong> o valor do aporte inicial</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-100 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center min-h-[140px]">
+                        <svg viewBox="0 0 400 120" class="w-full h-28 overflow-visible">
+                            <path d="@_chartPath" fill="none" stroke="#d97706" stroke-width="3" stroke-linecap="round"></path>
+                            <path d="@_chartFill" fill="url(#chart-grad)" opacity="0.15"></path>
+                            <defs>
+                                <linearGradient id="chart-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#d97706"></stop>
+                                    <stop offset="100%" stop-color="#d97706" stop-opacity="0"></stop>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ===== TAB: DOCUMENTS ===== -->
+        @if (_activeTab == "documents")
+        {
+            <div class="flex flex-col gap-6 animate-fade-in">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Central de Governança & Transparência</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Arquivos jurídicos estruturais e relatórios periódicos para download</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 dark:text-red-400 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">Contrato de Constituição da SCP</h4>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">Assinado com validade jurídica e lastro documental</p>
+                            </div>
+                        </div>
+                        <button @onclick='() => ShowToast("Iniciando download de: Contrato_SCP_Socio_Oculto.pdf...")' class="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-semibold px-4 py-2 rounded-xl transition">
+                            <i class="fa-solid fa-download mr-1.5"></i> Baixar
+                        </button>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 dark:text-red-400 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">Relatório Operacional - Q1</h4>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">Giro médio consolidado dos ativos e lucros</p>
+                            </div>
+                        </div>
+                        <button @onclick='() => ShowToast("Iniciando download de: Relatorio_Q1_Autoimovel.pdf...")' class="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-semibold px-4 py-2 rounded-xl transition">
+                            <i class="fa-solid fa-download mr-1.5"></i> Baixar
+                        </button>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 dark:text-red-400 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">Auditoria Trimestral de Estoque</h4>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">Conformidade e integridade física de todos os carros</p>
+                            </div>
+                        </div>
+                        <button @onclick='() => ShowToast("Iniciando download de: Laudo_Auditoria_Estoque.pdf...")' class="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-semibold px-4 py-2 rounded-xl transition">
+                            <i class="fa-solid fa-download mr-1.5"></i> Baixar
+                        </button>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 dark:text-red-400 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">Declaração Tributária de Isenção</h4>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">Documento explicativo sobre distribuição de dividendos</p>
+                            </div>
+                        </div>
+                        <button @onclick='() => ShowToast("Iniciando download de: Manual_Tributacao_SCP.pdf...")' class="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-semibold px-4 py-2 rounded-xl transition">
+                            <i class="fa-solid fa-download mr-1.5"></i> Baixar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else if (_erro)
+    {
+        <div class="bg-brand-secondary-500/40 border border-slate-800 rounded-2xl p-8 text-center">
+            <p class="text-red-400 text-lg font-medium">Erro ao carregar dados</p>
+            <p class="text-slate-400 text-sm mt-2">Não foi possível conectar ao servidor. Tente novamente mais tarde.</p>
+        </div>
+    }
+    else
+    {
+        <div class="flex items-center justify-center py-20">
+            <div class="text-center">
+                <div class="animate-spin inline-block w-8 h-8 border-2 border-brand-highlight-600 border-t-transparent rounded-full mb-4"></div>
+                <p class="text-slate-400 text-sm">Carregando seu patrimônio...</p>
+            </div>
+        </div>
+    }
+</main>
+
+        <!-- Footer -->
+        <footer class="border-t border-slate-200 dark:border-slate-900 bg-white dark:bg-brand-primary-600/90 text-xs text-slate-500 py-6 px-4 md:px-8 mt-12 transition-colors">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <p>© 2026 Autoimóvel Negócios Automotivos e Imobiliários. Todos os direitos reservados.</p>
+                <div class="flex space-x-4">
+                    <span class="hover:text-slate-700 dark:hover:text-slate-300 transition cursor-pointer">Termos de Uso</span>
+                    <span>•</span>
+                    <span class="hover:text-slate-700 dark:hover:text-slate-300 transition cursor-pointer">Política de Privacidade</span>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Laudo Modal -->
+        @if (_laudoVeiculo is not null)
+        {
+            <div class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative">
+                    <div class="p-6 bg-gradient-to-r from-brand-primary-600 to-brand-secondary-600 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-md font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-file-shield text-brand-highlight-600"></i>
+                                <span>Laudo Cautelar Consolidado</span>
+                            </h3>
+                            <p class="text-[10px] text-white/80 mt-1">Veículo: @_laudoVeiculo | Ref Placa: @_laudoPlaca</p>
+                        </div>
+                        <button @onclick="CloseLaudo" class="text-white/70 hover:text-white h-8 w-8 rounded-full hover:bg-white/20 transition flex items-center justify-center">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-6 space-y-4">
+                        <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center space-x-3">
+                            <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-lg"></i>
+                            <div>
+                                <h4 class="text-xs font-bold text-emerald-600 dark:text-emerald-400">PROCEDÊNCIA E ESTRUTURA 100% APROVADAS</h4>
+                                <p class="text-[10px] text-slate-600 dark:text-slate-300">Nenhuma inconformidade mecânica ou documental detectada.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2.5">
+                            <h5 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Itens do Checklist Técnico:</h5>
+                            <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl">
+                                <span class="text-xs text-slate-700 dark:text-slate-300">Integridade de Chassi e Motor</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-check"></i> Original</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl">
+                                <span class="text-xs text-slate-700 dark:text-slate-300">Histórico de Leilão ou Sinistro</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-check"></i> Nada Consta</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl">
+                                <span class="text-xs text-slate-700 dark:text-slate-300">Pintura e Funilaria Estrutural</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-check"></i> Verificado</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl">
+                                <span class="text-xs text-slate-700 dark:text-slate-300">Quitação e Débitos Tributários</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-check"></i> Livre</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                        <button @onclick="CloseLaudo" class="bg-brand-highlight-600 hover:bg-brand-highlightLight text-brand-primary-600 font-bold text-xs px-4 py-2.5 rounded-xl transition">
+                            Fechar Visualizador
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Toast -->
+        <div class="fixed bottom-6 right-6 z-50 transition-all duration-300 @(_toastMsg is null ? "translate-y-20 opacity-0" : "translate-y-0 opacity-100")">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3">
+                <div class="h-6 w-6 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <span class="text-xs font-semibold">@_toastMsg</span>
+            </div>
+        </div>
+
+@code {
+    private PatrimonioResponse? _patrimonio;
+    private List<VeiculoLastroItemResponse> _veiculos = new();
+    private string _activeTab = "overview";
+    private bool _erro;
+    private string _codigoSCP = "";
+    private string? _toastMsg;
+    private string? _laudoVeiculo;
+    private string? _laudoPlaca;
+    private CancellationTokenSource? _toastCts;
+
+    private int _simCapital = 100000;
+    private int _simMeses = 36;
+    private decimal _simCapitalFinal;
+    private decimal _simLucroTotal;
+    private decimal _simMultiplo;
+    private string _chartPath = "";
+    private string _chartFill = "";
+
+    private int PercentualEmCaixa => _patrimonio?.PatrimonioTotal > 0
+        ? (int)(_patrimonio.CapitalEmLiquidez / _patrimonio.PatrimonioTotal * 100) : 0;
+    private int PercentualAlocado => _patrimonio?.PatrimonioTotal > 0
+        ? (int)(_patrimonio.CapitalAlocado / _patrimonio.PatrimonioTotal * 100) : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Storage.GetItemAsync<string>("auth_token");
+        if (string.IsNullOrEmpty(token))
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        var investidorIdStr = await Storage.GetItemAsync<string>("auth_investidor_id");
+        if (string.IsNullOrEmpty(investidorIdStr))
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        var investidorId = Guid.Parse(investidorIdStr);
+        _codigoSCP = investidorIdStr[..8].ToUpper();
+
+        try
+        {
+            var patrimonioTask = Api.GetPatrimonioAsync(investidorId);
+            var lastroTask = Api.GetRastreabilidadeLastroAsync(investidorId);
+
+            await Task.WhenAll(patrimonioTask, lastroTask);
+
+            _patrimonio = patrimonioTask.Result;
+            _veiculos = lastroTask.Result.Veiculos;
+
+            CalcularSimulacao();
+        }
+        catch (Exception ex)
+        {
+            if (ex.Message.Contains("401"))
+            {
+                await Storage.RemoveItemAsync("auth_token");
+                await Storage.RemoveItemAsync("auth_investidor_id");
+                await Storage.RemoveItemAsync("auth_email");
+                await Storage.RemoveItemAsync("auth_role");
+                Nav.NavigateTo("/login");
+                return;
+            }
+            _erro = true;
+            Console.Error.WriteLine($"Erro ao carregar dashboard: {ex.Message}");
+        }
+    }
+
+    private void CalcularSimulacao()
+    {
+        const double taxa = 0.03;
+        _simCapitalFinal = (decimal)(_simCapital * Math.Pow(1 + taxa, _simMeses));
+        _simLucroTotal = _simCapitalFinal - _simCapital;
+        _simMultiplo = _simCapital > 0 ? _simCapitalFinal / _simCapital : 0;
+
+        var points = new List<string>();
+        int steps = 10;
+        double width = 400, height = 120;
+
+        for (int i = 0; i <= steps; i++)
+        {
+            double stepMonth = (_simMeses / (double)steps) * i;
+            double value = _simCapital * Math.Pow(1 + taxa, stepMonth);
+            double x = (width / steps) * i;
+            double maxValue = _simCapital * Math.Pow(1 + taxa, 36);
+            double normalizedY = height - 10 - ((value / maxValue) * (height - 30));
+            points.Add($"{x:F1},{normalizedY:F1}");
+        }
+
+        var pathD = $"M {string.Join(" L ", points)}";
+        _chartPath = pathD;
+        _chartFill = $"{pathD} L 400,120 L 0,120 Z";
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "I";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][..1].ToUpper();
+        return $"{parts[0][..1]}{parts[^1][..1]}".ToUpper();
+    }
+
+    private void OpenLaudo(string veiculo, string placa)
+    {
+        _laudoVeiculo = veiculo;
+        _laudoPlaca = placa;
+    }
+
+    private void CloseLaudo()
+    {
+        _laudoVeiculo = null;
+        _laudoPlaca = null;
+    }
+
+    private async Task Logout()
+    {
+        await Storage.RemoveItemAsync("auth_token");
+        await Storage.RemoveItemAsync("auth_investidor_id");
+        await Storage.RemoveItemAsync("auth_email");
+        await Storage.RemoveItemAsync("auth_role");
+        Nav.NavigateTo("/login");
+    }
+
+    private async Task ToggleTheme()
+    {
+        await Theme.ToggleThemeAsync();
+    }
+
+    private string BadgeClass(bool isVenda) => isVenda
+        ? "text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+        : "text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20";
+
+    private string TextColorClass(bool isVenda) => isVenda ? "text-emerald-500" : "text-amber-500";
+
+    private string ProgressClass(bool isVenda) => isVenda ? "bg-emerald-500" : "bg-amber-500";
+
+    private async void ShowToast(string message)
+    {
+        _toastCts?.Cancel();
+        _toastCts = new CancellationTokenSource();
+        var cts = _toastCts;
+
+        _toastMsg = message;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(3000, cts.Token);
+            if (!cts.IsCancellationRequested)
+            {
+                _toastMsg = null;
+                StateHasChanged();
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+}

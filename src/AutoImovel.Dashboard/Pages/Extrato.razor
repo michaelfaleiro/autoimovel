@@ -1,0 +1,134 @@
+@page "/extrato"
+@using Blazored.LocalStorage
+@using AutoImovel.Shared.Domain.Enums
+@inject ApiClient Api
+@inject ILocalStorageService Storage
+@inject NavigationManager Nav
+
+<div class="max-w-7xl w-full mx-auto p-4 md:p-8 flex flex-col gap-6">
+    <div>
+        <h2 class="text-xl font-bold text-white">Extrato de Rendimentos</h2>
+        <p class="text-sm text-slate-400">Histórico completo dos lucros distribuídos</p>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex items-center justify-center py-20">
+            <div class="animate-spin inline-block w-8 h-8 border-2 border-brand-highlight-600 border-t-transparent rounded-full"></div>
+        </div>
+    }
+    else if (_erro)
+    {
+        <div class="bg-brand-primary-900/40 border border-slate-800 rounded-2xl p-8 text-center">
+            <p class="text-red-400 text-lg font-medium">Erro ao carregar dados</p>
+            <p class="text-slate-400 text-sm mt-2">Não foi possível conectar ao servidor.</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div class="bg-brand-primary-900/40 border border-slate-800/80 rounded-2xl p-5">
+                <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Total de Rendimentos</p>
+                <h3 class="text-2xl font-black text-emerald-400 mt-1">R$ @_total.ToString("N2")</h3>
+            </div>
+            <div class="bg-brand-primary-900/40 border border-slate-800/80 rounded-2xl p-5">
+                <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Total de Taxas Pagas</p>
+                <h3 class="text-2xl font-black text-red-400 mt-1">R$ @_totalTaxas.ToString("N2")</h3>
+            </div>
+            <div class="bg-brand-primary-900/40 border border-slate-800/80 rounded-2xl p-5">
+                <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Operações Realizadas</p>
+                <h3 class="text-2xl font-black text-white mt-1">@_items.Count</h3>
+            </div>
+        </div>
+
+        <div class="bg-brand-primary-900/30 border border-slate-800 rounded-3xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white">Rendimentos Recebidos</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-800 bg-slate-800/50">
+                            <th class="px-4 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">Veículo</th>
+                            <th class="px-4 py-3 text-right font-medium text-slate-400 text-xs uppercase tracking-wider">Lucro Bruto</th>
+                            <th class="px-4 py-3 text-right font-medium text-slate-400 text-xs uppercase tracking-wider">Taxa Gestão</th>
+                            <th class="px-4 py-3 text-right font-medium text-slate-400 text-xs uppercase tracking-wider">Taxa Infra</th>
+                            <th class="px-4 py-3 text-right font-medium text-slate-400 text-xs uppercase tracking-wider">Taxa Perf.</th>
+                            <th class="px-4 py-3 text-right font-medium text-slate-400 text-xs uppercase tracking-wider">Lucro Líquido</th>
+                            <th class="px-4 py-3 text-left font-medium text-slate-400 text-xs uppercase tracking-wider">Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!_items.Any())
+                        {
+                            <tr><td colspan="7" class="px-4 py-12 text-center text-slate-500">Nenhum rendimento registrado.</td></tr>
+                        }
+                        @foreach (var r in _items)
+                        {
+                            <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                                <td class="px-4 py-3 text-slate-200 font-medium">@r.MarcaModeloVeiculo</td>
+                                <td class="px-4 py-3 text-right text-slate-300">R$ @r.LucroBrutoProporcional.ToString("N2")</td>
+                                <td class="px-4 py-3 text-right text-red-400">-R$ @r.TaxaGestaoRetida.ToString("N2")</td>
+                                <td class="px-4 py-3 text-right text-red-400">-R$ @r.TaxaInfraRetida.ToString("N2")</td>
+                                <td class="px-4 py-3 text-right text-red-400">-R$ @r.TaxaPerformanceRetida.ToString("N2")</td>
+                                <td class="px-4 py-3 text-right font-bold text-emerald-400">R$ @r.LucroLiquidoPago.ToString("N2")</td>
+                                <td class="px-4 py-3 text-slate-500">@r.DataFechamento.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<RendimentoItemResponse> _items = new();
+    private decimal _total;
+    private decimal _totalTaxas;
+    private bool _loading = true;
+    private bool _erro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Storage.GetItemAsync<string>("auth_token");
+        if (string.IsNullOrEmpty(token))
+        {
+            Nav.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        var investidorIdStr = await Storage.GetItemAsync<string>("auth_investidor_id");
+        if (string.IsNullOrEmpty(investidorIdStr))
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        var investidorId = Guid.Parse(investidorIdStr);
+
+        try
+        {
+            var extrato = await Api.GetExtratoRendimentosAsync(investidorId);
+            _items = extrato.Rendimentos;
+            _total = extrato.TotalLucroLiquido;
+            _totalTaxas = _items.Sum(r => r.TaxaGestaoRetida + r.TaxaInfraRetida + r.TaxaPerformanceRetida);
+        }
+        catch (Exception ex)
+        {
+            if (ex.Message.Contains("401"))
+            {
+                await Storage.RemoveItemAsync("auth_token");
+                await Storage.RemoveItemAsync("auth_investidor_id");
+                Nav.NavigateTo("/login");
+                return;
+            }
+            _erro = true;
+            Console.Error.WriteLine($"Erro: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

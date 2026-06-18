@@ -1,0 +1,146 @@
+@page "/investidores/novo"
+@using AutoImovel.Admin.Services
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<div class="animate-fade-in">
+    <div class="mb-4">
+        <a href="/investidores" class="text-sm text-brand-primary-600 hover:text-brand-primary-700 font-medium">&larr; Voltar</a>
+    </div>
+
+    <div class="bg-brand-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Cadastrar Novo Investidor</h3>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome Completo</label>
+                    <input @bind="_nome" type="text"
+                           class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600"
+                           placeholder="João Silva" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CPF/CNPJ</label>
+                    <input @bind="_cpfCnpj" type="text"
+                           class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600"
+                           placeholder="000.000.000-00" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">E-mail</label>
+                    <input @bind="_email" type="email"
+                           class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600"
+                           placeholder="investidor@email.com" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Telefone</label>
+                    <input @bind="_telefone" type="text"
+                           class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600"
+                           placeholder="(11) 99999-9999" />
+                </div>
+            </div>
+
+            <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Dados Bancários</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Chave Pix</label>
+                        <input @bind="_chavePix" type="text"
+                               class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600"
+                               placeholder="joao@email.com" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Banco</label>
+                        <input @bind="_banco" type="text"
+                               class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600"
+                               placeholder="Banco Inter" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Agência</label>
+                        <input @bind="_agencia" type="text"
+                               class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600"
+                               placeholder="0001" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Conta</label>
+                        <input @bind="_conta" type="text"
+                               class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600"
+                               placeholder="12345-6" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Conta</label>
+                        <select @bind="_tipoConta"
+                                class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-brand-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-accent-600">
+                            <option value="">Selecione...</option>
+                            <option value="Corrente">Corrente</option>
+                            <option value="Poupança">Poupança</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button @onclick="Submit" disabled="@_loading"
+                    class="px-4 py-2 bg-brand-primary-600 hover:bg-brand-primary-700 text-brand-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+                @(_loading ? "Processando..." : "Cadastrar Investidor")
+            </button>
+
+            @if (!string.IsNullOrEmpty(_msg))
+            {
+                <div class="p-3 rounded-lg text-sm @(_erro ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400")">
+                    @_msg
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _nome = string.Empty;
+    private string _cpfCnpj = string.Empty;
+    private string _email = string.Empty;
+    private string _telefone = string.Empty;
+    private string _chavePix = string.Empty;
+    private string _banco = string.Empty;
+    private string _agencia = string.Empty;
+    private string _conta = string.Empty;
+    private string _tipoConta = string.Empty;
+    private bool _loading;
+    private string _msg = string.Empty;
+    private bool _erro;
+
+    private async Task Submit()
+    {
+        _msg = string.Empty;
+        _erro = false;
+
+        if (string.IsNullOrEmpty(_nome) || string.IsNullOrEmpty(_cpfCnpj) || string.IsNullOrEmpty(_email))
+        {
+            _msg = "Preencha os campos obrigatórios: Nome, CPF/CNPJ e E-mail.";
+            _erro = true;
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            var result = await Api.CadastrarInvestidorAsync(new CadastrarInvestidorRequest(
+                _nome, _cpfCnpj, _email, _telefone, _chavePix, _banco, _agencia, _conta, _tipoConta));
+            _msg = $"Investidor cadastrado com sucesso! ID: {result.Id}";
+        }
+        catch (Exception ex)
+        {
+            _msg = $"Erro: {ex.Message}";
+            _erro = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

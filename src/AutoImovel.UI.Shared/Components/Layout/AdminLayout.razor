@@ -1,0 +1,35 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+
+@namespace AutoImovel.UI.Shared.Components.Layout
+
+<div class="min-h-screen flex" data-theme="light">
+    <Sidebar Items="_navItems" />
+
+    <div class="flex-1 flex flex-col">
+        <Header OnThemeToggle="HandleThemeToggle" />
+
+        <main class="flex-1 p-6 overflow-auto">
+            @Body
+        </main>
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment Body { get; set; } = default!;
+
+    private List<Sidebar.NavItem> _navItems = new()
+    {
+        new Sidebar.NavItem { Label = "Início", Icon = "home", Href = "/" },
+        new Sidebar.NavItem { Label = "Investidores", Icon = "users", Href = "/investidores" },
+        new Sidebar.NavItem { Label = "Aportes", Icon = "wallet", Href = "/aportes" },
+        new Sidebar.NavItem { Label = "Veículos", Icon = "truck", Href = "/veiculos" },
+        new Sidebar.NavItem { Label = "Vincular Lastro", Icon = "link", Href = "/vincular-lastro" },
+        new Sidebar.NavItem { Label = "Fechamentos", Icon = "check-circle", Href = "/fechamentos" },
+    };
+
+    private async Task HandleThemeToggle()
+    {
+        // Theme toggle handled via cascading ThemeProvider
+    }
+}

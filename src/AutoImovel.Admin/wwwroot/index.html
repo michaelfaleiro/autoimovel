@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoImóvel Admin</title>
+    <base href="/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preload" id="webassembly" />
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-plus { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            primary: {
+                                50: '#edf4f9',
+                                100: '#dae6f2',
+                                200: '#b3cbe0',
+                                300: '#81a6c6',
+                                400: '#4a7aa5',
+                                500: '#275884',
+                                600: '#003F77',
+                                700: '#10406b',
+                                800: '#072c4c',
+                                900: '#02192d',
+                                950: '#000d19'
+                            },
+                            secondary: {
+                                50: '#edf4f9',
+                                100: '#dae7f2',
+                                200: '#b3cce0',
+                                300: '#81a8c6',
+                                400: '#4a7da5',
+                                500: '#275b84',
+                                600: '#005496',
+                                700: '#10436b',
+                                800: '#072e4c',
+                                900: '#021a2d',
+                                950: '#000e19'
+                            },
+                            accent: {
+                                50: '#edf6f9',
+                                100: '#daebf2',
+                                200: '#b3d4e0',
+                                300: '#81b4c6',
+                                400: '#4a8da5',
+                                500: '#276c84',
+                                600: '#007AA5',
+                                700: '#10536b',
+                                800: '#073a4c',
+                                900: '#02222d',
+                                950: '#001219'
+                            },
+                            highlight: {
+                                50: '#f9f1ed',
+                                100: '#f2e2da',
+                                200: '#e0c3b3',
+                                300: '#c69a81',
+                                400: '#a56b4a',
+                                500: '#844927',
+                                600: '#FF6A14',
+                                700: '#6b3110',
+                                800: '#4c2007',
+                                900: '#2d1202',
+                                950: '#190900'
+                            },
+                            highlightLight: '#FF9E66',
+                            black: '#000000',
+                            white: '#FFFFFF'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        plus: ['Plus Jakarta Sans', 'sans-serif']
+                    },
+                    animation: { 'fade-in': 'fadeIn 0.2s ease-in-out' },
+                    keyframes: { fadeIn: { '0%': { opacity: '0', transform: 'translateY(4px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } } }
+                }
+            }
+        }
+    </script>
+    <script type="importmap"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900">
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui" style="display: none;">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+
+</html>

@@ -1,0 +1,256 @@
+@page "/investidores/{Id:guid}"
+@using AutoImovel.Admin.Services
+@using AutoImovel.Shared.Domain.Enums
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<div class="animate-fade-in">
+    <div class="mb-6">
+        <a href="/investidores" class="text-sm text-brand-primary-600 dark:text-brand-accent-300 hover:underline font-bold inline-flex items-center gap-2">
+            <i class="fa-solid fa-arrow-left"></i> Voltar para Investidores
+        </a>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex flex-col items-center justify-center py-20">
+            <div class="animate-spin inline-block w-10 h-10 border-4 border-brand-accent-600 border-t-transparent rounded-full mb-4"></div>
+            <div class="text-slate-500 font-medium">Carregando dados do investidor...</div>
+        </div>
+    }
+    else if (_data is null)
+    {
+        <div class="bg-brand-white dark:bg-black border border-slate-200 dark:border-brand-primary-800 rounded-2xl shadow-sm p-12 text-center">
+            <div class="w-16 h-16 bg-rose-100 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <p class="text-slate-500 font-bold">@_error</p>
+        </div>
+    }
+    else
+    {
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <h2 class="font-plus text-3xl font-black text-brand-primary-600 dark:text-brand-white flex items-center gap-3">
+                    @_data.NomeCompleto
+                    <span class="px-3 py-1 text-[10px] uppercase tracking-widest rounded-full @(_data.Status == StatusInvestidor.Aprovado ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20")">
+                        @_data.Status.ToString()
+                    </span>
+                </h2>
+                <p class="text-sm text-slate-500 mt-1 font-mono">ID: @_data.Id.ToString()</p>
+            </div>
+            @if (_data.Status == StatusInvestidor.Pendente)
+            {
+                <button class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2">
+                    <i class="fa-solid fa-check"></i> Aprovar Cadastro
+                </button>
+            }
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-brand-primary-100 dark:bg-brand-primary-900/20 border border-brand-primary-600/10 rounded-2xl p-5">
+                <div class="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400 mb-1">Total Investido</div>
+                <div class="font-plus text-2xl font-black text-brand-primary-600 dark:text-brand-white">R$ @_data.Portfolio.TotalInvestido.ToString("N2")</div>
+            </div>
+            <div class="bg-brand-secondary-100/5 dark:bg-brand-secondary-900/10 border border-brand-secondary-600/10 rounded-2xl p-5">
+                <div class="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400 mb-1">Em Liquidez (Caixa)</div>
+                <div class="font-plus text-2xl font-black text-brand-secondary-600 dark:text-brand-secondary-400">R$ @_data.Portfolio.TotalEmLiquidez.ToString("N2")</div>
+            </div>
+            <div class="bg-brand-highlight-100/5 dark:bg-brand-highlight-900/10 border border-brand-highlight-600/10 rounded-2xl p-5">
+                <div class="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400 mb-1">Lastreado em Veículos</div>
+                <div class="font-plus text-2xl font-black text-brand-highlight-600">R$ @_data.Portfolio.TotalAlocado.ToString("N2")</div>
+            </div>
+            <div class="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/10 rounded-2xl p-5">
+                <div class="text-[10px] uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400 mb-1">Lucro Recebido</div>
+                <div class="font-plus text-2xl font-black text-emerald-600 dark:text-emerald-400">R$ @_data.Portfolio.TotalRendimentos.ToString("N2")</div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-brand-black border border-slate-200 dark:border-brand-primary-800 rounded-2xl shadow-sm overflow-hidden mb-8">
+            <div class="px-6 py-5 border-b border-slate-200 dark:border-brand-primary-800/20 bg-slate-50/50 dark:bg-brand-primary-900/50">
+                <h3 class="font-plus text-lg font-bold text-brand-primary-600 dark:text-brand-white">Perfil e Dados Bancários</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nome Completo</span>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 font-medium mt-1">@_data.NomeCompleto</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CPF/CNPJ</span>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 font-medium mt-1 font-mono">@_data.CpfCnpj</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">E-mail</span>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 font-medium mt-1">@_data.Email</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Telefone</span>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 font-medium mt-1">@_data.Telefone</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data Cadastro</span>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 font-medium mt-1">@_data.DataCadastro.ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chave Pix</span>
+                                <p class="text-sm text-brand-accent-600 font-bold mt-1 font-mono">@_data.ChavePix</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Banco</span>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 font-medium mt-1">@_data.Banco</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Agência / Conta</span>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 font-medium mt-1 font-mono">@_data.Agencia / @_data.Conta</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tipo de Conta</span>
+                        <p class="text-sm text-slate-800 dark:text-slate-200 font-medium mt-1">@_data.TipoConta</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-brand-black border border-slate-200 dark:border-brand-primary-800 rounded-2xl shadow-sm overflow-hidden mb-8">
+            <div class="px-6 py-5 border-b border-slate-200 dark:border-brand-primary-800/20 bg-slate-50/50 dark:bg-brand-primary-900/50 flex justify-between items-center">
+                <h3 class="font-plus text-lg font-bold text-brand-primary-600 dark:text-brand-white">Histórico de Aportes</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-brand-primary-800/20 bg-slate-50/30 dark:bg-brand-primary-900/50">
+                                 <th class="px-6 py-3 text-left font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Aporte ID</th>
+                                 <th class="px-6 py-3 text-right font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Valor Original</th>
+                                 <th class="px-6 py-3 text-right font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Em Liquidez</th>
+                                 <th class="px-6 py-3 text-left font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Status</th>
+                                        <th class="px-6 py-3 text-left font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Data</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-brand-primary-900/50">
+                        @if (!_data.Aportes.Any())
+                        {
+                            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 italic">Nenhum aporte registrado.</td></tr>
+                        }
+                        @foreach (var item in _data.Aportes)
+                        {
+                            <tr class="group hover:bg-slate-50 dark:hover:bg-brand-primary-900/50 transition-colors cursor-pointer"
+                                @onclick="() => IrParaAporte(item.Id)">
+                                 <td class="px-6 py-4 font-mono text-xs text-brand-accent-600 group-hover:underline">@item.Id.ToString()[..8]</td>
+                                <td class="px-6 py-4 text-right text-slate-800 dark:text-slate-200 font-bold">R$ @item.ValorOriginal.ToString("N2")</td>
+                                <td class="px-6 py-4 text-right text-slate-600 dark:text-slate-400">R$ @item.SaldoEmLiquidez.ToString("N2")</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-3 py-1 text-[10px] font-black uppercase rounded-full @(item.Status.ToString() switch { "Alocado" => "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20", "Resgatado" => "bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20", _ => "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" })">
+                                        @item.Status.ToString()
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">@item.DataAporte.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div class="bg-white dark:bg-brand-black border border-slate-200 dark:border-brand-primary-800 rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-slate-200 dark:border-brand-primary-800/20 bg-slate-50/50 dark:bg-brand-primary-900/50">
+                        <h3 class="font-plus text-lg font-bold text-brand-primary-600 dark:text-brand-white">Alocações Ativas (Lastro)</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-brand-primary-800/20 bg-slate-50/30 dark:bg-brand-primary-900/50">
+                                <th class="px-6 py-3 text-left font-bold text-brand-primary dark:text-slate-400 uppercase tracking-wider text-[10px]">Veículo</th>
+                                        <th class="px-6 py-3 text-right font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Alocado</th>
+                                        <th class="px-6 py-3 text-right font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">%</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-brand-primary-900/50">
+                            @if (!_data.AlocacoesAtivas.Any())
+                            {
+                                <tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 italic">Nenhuma alocação ativa.</td></tr>
+                            }
+                            @foreach (var item in _data.AlocacoesAtivas)
+                            {
+                                <tr class="hover:bg-slate-50 dark:hover:bg-brand-primary-900/50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <a href="/veiculos/@item.VeiculoId" class="text-brand-accent-600 hover:underline font-bold text-xs flex items-center gap-2">
+                                            <i class="fa-solid fa-car-side text-slate-400"></i>
+                                            @item.PlacaVeiculo - @item.MarcaModelo
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 text-right text-slate-800 dark:text-slate-200 font-bold">R$ @item.ValorAlocado.ToString("N2")</td>
+                                    <td class="px-6 py-4 text-right text-slate-500 dark:text-slate-400 font-mono text-xs">@item.PorcentagemDoAporte.ToString("N2")%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-brand-black border border-slate-200 dark:border-brand-primary-800 rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-slate-200 dark:border-brand-primary-800/20 bg-slate-50/50 dark:bg-brand-primary-900/50">
+                        <h3 class="font-plus text-lg font-bold text-brand-primary-600 dark:text-brand-white">Últimos Rendimentos</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-brand-primary-800/20 bg-slate-50/30 dark:bg-brand-primary-900/50">
+                                <th class="px-6 py-3 text-left font-bold text-brand-primary dark:text-slate-400 uppercase tracking-wider text-[10px]">Veículo</th>
+                                        <th class="px-6 py-3 text-right font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Lucro Líquido</th>
+                                 <th class="px-6 py-3 text-left font-bold text-brand-primary-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Data</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-brand-primary-900/50">
+                            @if (!_data.Rendimentos.Any())
+                            {
+                                <tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 italic">Nenhum rendimento recebido.</td></tr>
+                            }
+                            @foreach (var item in _data.Rendimentos)
+                            {
+                                <tr class="hover:bg-slate-50 dark:hover:bg-brand-primary-900/50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div class="font-bold text-slate-800 dark:text-slate-200 text-xs">@item.PlacaVeiculo</div>
+                                        <div class="text-[10px] text-slate-400 truncate max-w-[150px]">@item.MarcaModelo</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <span class="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded">
+                                            + R$ @item.LucroLiquidoPago.ToString("N2")
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">@item.DataFechamento.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private InvestidorDetalheResponse? _data;
+    private bool _loading = true;
+    private string _error = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _data = await Api.GetInvestidorDetalheAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void IrParaAporte(Guid id) => Nav.NavigateTo($"/aportes/{id}");
+}

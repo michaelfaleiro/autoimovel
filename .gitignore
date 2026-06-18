@@ -1,0 +1,44 @@
+## Visual Studio Build Artifacts
+[Bb]in/
+[Oo]bj/
+out/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.useroscache
+*.sln.docstates
+
+## JetBrains Rider
+.idea/
+*.sln.idea
+
+## NuGet Packages
+packages/
+*.nuget.g.props
+*.nuget.g.targets
+
+## .NET Core / .NET 5+
+project.lock.json
+project.assets.json
+
+## User-specific files
+*.rsuser
+*.suo
+*.user
+*.useroscache
+*.sln.docstates
+
+## OS files
+.DS_Store
+Thumbs.db
+
+## Environment and Secrets
+.env
+appsettings.Development.json
+appsettings.Local.json
+
+## Blazor / WebAssembly
+wwwroot/dist/
+wwwroot/build/

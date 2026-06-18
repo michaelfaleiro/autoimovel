@@ -1,0 +1,233 @@
+@typeparam TItem
+@namespace AutoImovel.UI.Shared.Components.DataDisplay
+
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
+    @if (HasHeader)
+    {
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            @if (HeaderTemplate is not null)
+            {
+                @HeaderTemplate
+            }
+            else
+            {
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">@Title</h3>
+                    <div class="flex items-center gap-2">
+                        @ActionsTemplate
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            @if (Columns is not null)
+            {
+                <thead>
+                    <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                        @foreach (var col in Columns)
+                        {
+                            <th class="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap @col.HeaderClass"
+                                @onclick="() => SortBy(col)">
+                                @col.Title
+                                @if (SortColumn == col.Field && SortDescending)
+                                {
+                                    <span class="ml-1">↓</span>
+                                }
+                                else if (SortColumn == col.Field && !SortDescending)
+                                {
+                                    <span class="ml-1">↑</span>
+                                }
+                            </th>
+                        }
+                        @if (RowActions is not null)
+                        {
+                            <th class="px-4 py-3 text-right font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap w-24">Ações</th>
+                        }
+                    </tr>
+                </thead>
+            }
+            <tbody>
+                @if (Items is null || !Items.Any())
+                {
+                    <tr>
+                        <td colspan="@TotalColumns" class="px-4 py-12 text-center text-slate-400">
+                            @EmptyMessage
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Items)
+                    {
+                        <tr class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors @RowClass(item)"
+                            @onclick="() => OnRowClick?.Invoke(item)">
+                            @if (Columns is not null)
+                            {
+                                @foreach (var col in Columns)
+                                {
+                                    <td class="px-4 py-3 whitespace-nowrap @col.CellClass">
+                                        @if (col.Template is not null)
+                                        {
+                                            @col.Template(item)
+                                        }
+                                        else
+                                        {
+                                            @GetValue(item, col)
+                                        }
+                                    </td>
+                                }
+                            }
+                            @if (RowActions is not null)
+                            {
+                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                    @RowActions(item)
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (TotalPages > 1)
+    {
+        <div class="px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <span class="text-sm text-slate-500">
+                Página @CurrentPage de @TotalPages
+            </span>
+            <div class="flex gap-1">
+                <button class="px-3 py-1.5 text-sm rounded-md border @(CurrentPage <= 1 ? "text-slate-300 border-slate-200" : "text-slate-600 border-slate-300 hover:bg-slate-50")"
+                        disabled="@(CurrentPage <= 1)" @onclick="() => GoToPage(CurrentPage - 1)">
+                    Anterior
+                </button>
+                <button class="px-3 py-1.5 text-sm rounded-md border @(CurrentPage >= TotalPages ? "text-slate-300 border-slate-200" : "text-slate-600 border-slate-300 hover:bg-slate-50")"
+                        disabled="@(CurrentPage >= TotalPages)" @onclick="() => GoToPage(CurrentPage + 1)">
+                    Próxima
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? HeaderTemplate { get; set; }
+    [Parameter] public RenderFragment? ActionsTemplate { get; set; }
+    [Parameter] public List<TableColumn<TItem>>? Columns { get; set; }
+    [Parameter] public RenderFragment<TItem>? RowActions { get; set; }
+    [Parameter] public Func<TItem, string>? RowClass { get; set; }
+    [Parameter] public EventCallback<TItem> OnRowClick { get; set; }
+    [Parameter] public string EmptyMessage { get; set; } = "Nenhum registro encontrado.";
+
+    [Parameter] public List<TItem> Items { get; set; } = new();
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; } = 1;
+    [Parameter] public Func<DataTableRequest<TItem>, Task<DataTableResult<TItem>>>? LoadData { get; set; }
+
+    private string? SortColumn { get; set; }
+    private bool SortDescending;
+    private bool _initialized;
+
+    private bool HasHeader => !string.IsNullOrEmpty(Title) || HeaderTemplate is not null || ActionsTemplate is not null;
+
+    private int TotalColumns => (Columns?.Count ?? 0) + (RowActions is not null ? 1 : 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!_initialized && LoadData is not null)
+        {
+            await LoadItems();
+            _initialized = true;
+        }
+    }
+
+    private async Task LoadItems()
+    {
+        if (LoadData is null) return;
+
+        var request = new DataTableRequest<TItem>
+        {
+            CurrentPage = CurrentPage,
+            SortColumn = SortColumn,
+            SortDescending = SortDescending
+        };
+
+        var result = await LoadData(request);
+        if (result is not null)
+        {
+            Items = result.Items ?? new();
+            TotalPages = result.TotalPages > 0 ? result.TotalPages : 1;
+        }
+    }
+
+    private async Task SortBy(TableColumn<TItem> col)
+    {
+        if (!col.Sortable) return;
+
+        if (SortColumn == col.Field)
+            SortDescending = !SortDescending;
+        else
+        {
+            SortColumn = col.Field;
+            SortDescending = false;
+        }
+
+        await LoadItems();
+    }
+
+    private async Task GoToPage(int page)
+    {
+        if (page < 1 || page > TotalPages) return;
+        CurrentPage = page;
+        await LoadItems();
+    }
+
+    private string GetValue(TItem item, TableColumn<TItem> col)
+    {
+        if (col.ValueSelector is not null)
+            return col.ValueSelector(item);
+
+        var prop = typeof(TItem).GetProperty(col.Field);
+        if (prop is null) return string.Empty;
+
+        var val = prop.GetValue(item);
+        if (val is null) return string.Empty;
+
+        return col.Format is not null ? string.Format(col.Format, val) : val.ToString() ?? string.Empty;
+    }
+}
+
+@code {
+
+    public class TableColumn<TItem>
+    {
+        public string Field { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public bool Sortable { get; set; } = true;
+        public string? Format { get; set; }
+        public string? HeaderClass { get; set; }
+        public string? CellClass { get; set; }
+        public Func<TItem, string>? ValueSelector { get; set; }
+        public RenderFragment<TItem>? Template { get; set; }
+    }
+
+    public class DataTableRequest<TItem>
+    {
+        public int PageSize { get; set; } = 10;
+        public int CurrentPage { get; set; } = 1;
+        public string? SortColumn { get; set; }
+        public bool SortDescending { get; set; }
+        public Dictionary<string, string> Filters { get; set; } = new();
+    }
+
+    public class DataTableResult<TItem>
+    {
+        public List<TItem> Items { get; set; } = new();
+        public int TotalPages { get; set; }
+        public int TotalItems { get; set; }
+    }
+}

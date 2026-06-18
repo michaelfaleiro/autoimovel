@@ -1,0 +1,34 @@
+@using AutoImovel.Dashboard.Services
+
+<div class="bg-white rounded-lg shadow p-6 border-l-4 @BorderColor">
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-sm text-gray-500">@Titulo</p>
+            <p class="text-2xl font-bold @TextColor">R$ @Valor.ToString("N2")</p>
+        </div>
+        <div class="text-3xl">@Icone</div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = string.Empty;
+    [Parameter] public decimal Valor { get; set; }
+    [Parameter] public string Cor { get; set; } = "blue";
+    [Parameter] public string Icone { get; set; } = "💰";
+
+    private string BorderColor => Cor switch
+    {
+        "blue" => "border-blue-500",
+        "green" => "border-green-500",
+        "orange" => "border-orange-500",
+        _ => "border-gray-500"
+    };
+
+    private string TextColor => Cor switch
+    {
+        "blue" => "text-blue-700",
+        "green" => "text-green-700",
+        "orange" => "text-orange-700",
+        _ => "text-gray-700"
+    };
+}

@@ -1,0 +1,153 @@
+@page "/documentos"
+@using AutoImovel.Dashboard.Services
+@using AutoImovel.Shared.Domain
+@using Blazored.LocalStorage
+@inject ApiClient Api
+@inject ILocalStorageService Storage
+@inject NavigationManager Nav
+
+<div class="animate-fade-in">
+    <div class="mb-4">
+        <h2 class="text-2xl font-bold text-brand-white">Meus Documentos</h2>
+        <p class="text-sm text-slate-400">Documentos vinculados ao seu cadastro e veículos</p>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex items-center justify-center py-20">
+            <div class="animate-spin inline-block w-8 h-8 border-2 border-brand-highlight-600 border-t-transparent rounded-full"></div>
+        </div>
+    }
+    else if (_erro)
+    {
+        <div class="bg-brand-primary-900/40 border border-slate-800 rounded-2xl p-8 text-center">
+            <p class="text-red-400 text-lg font-medium">Erro ao carregar documentos</p>
+            <p class="text-slate-400 text-sm mt-2">Não foi possível conectar ao servidor.</p>
+        </div>
+    }
+    else if (_documentos.Any())
+    {
+        <div class="space-y-6">
+            @foreach (var doc in _documentos)
+            {
+                <div class="bg-brand-primary-900/30 border border-slate-800 rounded-3xl overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-brand-white">@doc.Nome</h3>
+                            <span class="px-2 py-0.5 text-xs rounded-full @GetTipoClass(doc.Tipo)">
+                                @doc.Tipo
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1">@doc.DataUpload.ToString("dd/MM/yyyy")</p>
+                    </div>
+                    <div class="px-6 py-4">
+                        @if (doc.VeiculoId.HasValue)
+                        {
+                            <div class="mb-3">
+                                <p class="text-sm text-slate-400 font-medium">Veículo Vinculado</p>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 rounded-lg bg-brand-accent-600/20 flex items-center justify-center text-brand-accent-400">
+                                        <i class="fa-solid fa-car"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-brand-white">@doc.Veiculo?.Placa ?? "Veículo não encontrado"</p>
+                                        <p class="text-sm text-slate-400">@doc.Veiculo?.MarcaModelo ?? ""</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (doc.InvestidorId.HasValue)
+                        {
+                            <div class="mb-3">
+                                <p class="text-sm text-slate-400 font-medium">Documento Pessoal</p>
+                                <p class="text-sm text-slate-400">Este documento está vinculado diretamente ao seu perfil.</p>
+                            </div>
+                        }
+
+                        <div class="mt-4">
+                            <p class="text-sm text-slate-400 font-medium">URL do Documento</p>
+                            <a href="@doc.Url" target="_blank" class="block w-fit text-brand-accent-600 hover:text-brand-accent-400 underline">
+                                @doc.Url
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-12">
+            <p class="text-slate-500">Nenhum documento encontrado.</p>
+            <p class="text-sm text-slate-400">
+                Documentos como laudos cautelares e contratos SCP serão exibidos aqui assim que estiverem vinculados ao seu cadastro ou veículos.
+            </p>
+        </div>
+    }
+</div>
+
+@code {
+    private List<DocumentoItem> _documentos = new();
+    private bool _loading = true;
+    private bool _erro;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDocumentos();
+    }
+
+    private async Task LoadDocumentos()
+    {
+        _loading = true;
+        _erro = false;
+        try
+        {
+            var token = await Storage.GetItemAsync<string>("auth_token");
+            if (string.IsNullOrEmpty(token))
+            {
+                Nav.NavigateTo("/login", forceLoad: true);
+                return;
+            }
+
+            var investidorIdStr = await Storage.GetItemAsync<string>("auth_investidor_id");
+            if (string.IsNullOrEmpty(investidorIdStr))
+            {
+                Nav.NavigateTo("/login");
+                return;
+            }
+
+            var investidorId = Guid.Parse(investidorIdStr);
+
+            // Get documents for this investor
+            _documentos = await Api.GetDocumentosAsync(investidorId: investidorId);
+        }
+        catch (Exception ex)
+        {
+            _erro = true;
+            if (ex.Message.Contains("401"))
+            {
+                await Storage.RemoveItemAsync("auth_token");
+                await Storage.RemoveItemAsync("auth_investidor_id");
+                Nav.NavigateTo("/login");
+            }
+            else
+            {
+                Console.Error.WriteLine($"Erro: {ex.Message}");
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string GetTipoClass(string tipo) => tipo switch
+    {
+        "Laudo" => "bg-brand-primary-100 text-brand-primary-600 dark:bg-brand-primary-900/30 dark:text-brand-primary-400",
+        "Contrato" => "bg-brand-secondary-100 text-brand-secondary-600 dark:bg-brand-secondary-900/30 dark:text-brand-secondary-400",
+        "Relatorio" => "bg-brand-accent-100 text-brand-accent-600 dark:bg-brand-accent-900/30 dark:text-brand-accent-400",
+        "Fiscal" => "bg-brand-highlight-100 text-brand-highlight-600 dark:bg-brand-highlight-900/30 dark:text-brand-highlight-400",
+        _ => "bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300"
+    };
+}

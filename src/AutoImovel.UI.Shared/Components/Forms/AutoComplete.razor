@@ -1,0 +1,152 @@
+@using Microsoft.AspNetCore.Components.Web
+@using System.Globalization
+@using System.Text
+@typeparam TItem
+
+<div @ref="_containerRef" class="relative" @onfocusout="HandleFocusOut">
+    <input type="text"
+           class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+           placeholder="@Placeholder"
+           value="@_searchText"
+           @oninput="HandleInput"
+           @onkeydown="HandleKeyDown"
+           @onfocus="HandleFocus" />
+
+    @if (_showDropdown && _filteredItems.Any())
+    {
+        <ul class="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            @foreach (var item in _filteredItems)
+            {
+                var idx = _filteredItems.IndexOf(item);
+                <li class="px-3 py-2.5 cursor-pointer text-sm text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-sky-900/30 transition-colors @(idx == _selectedIndex ? "bg-sky-50 dark:bg-sky-900/30" : "")"
+                    @onclick="() => SelectItem(item)"
+                    @onmouseenter="() => _selectedIndex = idx">
+                    @DisplayText(item)
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private string _searchText = string.Empty;
+    private List<TItem> _filteredItems = new();
+    private bool _showDropdown;
+    private int _selectedIndex = -1;
+    private TItem? _selectedItem;
+    private ElementReference _containerRef;
+
+    [Parameter] public List<TItem> Items { get; set; } = new();
+    [Parameter] public Func<TItem, string> DisplayText { get; set; } = item => item?.ToString() ?? "";
+    [Parameter] public Func<TItem, object?> SelectedValue { get; set; } = item => item;
+    [Parameter] public object? Value { get; set; }
+    [Parameter] public EventCallback<object?> ValueChanged { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Selecione...";
+    [Parameter] public string? InitialText { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(InitialText))
+            _searchText = InitialText;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Value != null && _selectedItem == null && Items.Any())
+        {
+            var match = Items.FirstOrDefault(i =>
+            {
+                var val = SelectedValue(i);
+                return val?.Equals(Value) == true;
+            });
+            if (match != null)
+            {
+                _selectedItem = match;
+                _searchText = DisplayText(match);
+            }
+        }
+    }
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        _searchText = e.Value?.ToString() ?? "";
+        FilterItems();
+        _showDropdown = true;
+        _selectedItem = default;
+        StateHasChanged();
+    }
+
+    private void HandleFocus(FocusEventArgs e)
+    {
+        FilterItems();
+        _showDropdown = true;
+    }
+
+    private async Task HandleFocusOut(FocusEventArgs e)
+    {
+        await Task.Delay(200);
+        _showDropdown = false;
+        if (_selectedItem != null)
+            _searchText = DisplayText(_selectedItem);
+        StateHasChanged();
+    }
+
+    private void FilterItems()
+    {
+        if (string.IsNullOrWhiteSpace(_searchText))
+        {
+            _filteredItems = Items.ToList();
+        }
+        else
+        {
+            var search = RemoveAccents(_searchText).ToLowerInvariant();
+            _filteredItems = Items
+                .Where(i => RemoveAccents(DisplayText(i)).ToLowerInvariant().Contains(search))
+                .ToList();
+        }
+        _selectedIndex = -1;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "ArrowDown")
+        {
+            if (_filteredItems.Any())
+            {
+                _selectedIndex = Math.Min(_selectedIndex + 1, _filteredItems.Count - 1);
+                _showDropdown = true;
+            }
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            _selectedIndex = Math.Max(_selectedIndex - 1, 0);
+            _showDropdown = true;
+        }
+        else if (e.Key == "Enter" && _selectedIndex >= 0 && _selectedIndex < _filteredItems.Count)
+        {
+            SelectItem(_filteredItems[_selectedIndex]);
+        }
+        else if (e.Key == "Escape")
+        {
+            _showDropdown = false;
+        }
+    }
+
+    private async void SelectItem(TItem item)
+    {
+        _selectedItem = item;
+        _searchText = DisplayText(item);
+        _showDropdown = false;
+        Value = SelectedValue(item);
+        await ValueChanged.InvokeAsync(Value);
+        StateHasChanged();
+    }
+
+    private static string RemoveAccents(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        var normalized = text.Normalize(NormalizationForm.FormD);
+        var chars = normalized.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark).ToArray();
+        return new string(chars).Normalize(NormalizationForm.FormC);
+    }
+}

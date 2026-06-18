@@ -1,0 +1,77 @@
+:root {
+  --color-primary: #003F77;
+  --color-primary-hover: #005496;
+  --color-primary-light: #dae6f2;
+  --color-secondary: #005496;
+  --color-accent: #007AA5;
+  --color-highlight: #FF6A14;
+  --color-highlight-hover: #cc5510;
+  --color-highlight-light: #f2e2da;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-bg: #ffffff;
+  --color-surface: #f8fafc;
+  --color-border: #dae6f2;
+  --color-text: #003F77;
+  --color-text-muted: #005496;
+  --radius: 0.5rem;
+  --shadow: 0 1px 3px rgba(0, 63, 119, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 63, 119, 0.15);
+  --header-height: 4rem;
+  --sidebar-width: 16rem;
+}
+
+[data-theme="dark"] {
+  --color-bg: #000000;
+  --color-surface: #00192d;
+  --color-border: #072c4c;
+  --color-text: #FFFFFF;
+  --color-text-muted: #81a6c6;
+  --color-primary-light: #072c4c;
+  --color-highlight-light: '#4c2007';
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in { animation: slide-in 0.3s ease-out; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.3s ease-out; }
+
+.loading-progress {
+  position: relative;
+  display: block;
+  width: 8rem;
+  height: 8rem;
+  margin: 20vh auto;
+}
+.loading-progress circle {
+  fill: none;
+  stroke: #e2e8f0;
+  stroke-width: 0.2rem;
+  transform-origin: 50% 50%;
+  transform: rotate(-90deg);
+}
+.loading-progress circle:last-child {
+  stroke: var(--color-primary);
+  stroke-dasharray: calc(3.141 * 45% * 2);
+  stroke-dashoffset: calc(3.141 * 45% * 2 * 0.75);
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}

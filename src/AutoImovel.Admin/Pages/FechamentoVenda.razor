@@ -1,0 +1,146 @@
+@page "/fechamentos"
+@using AutoImovel.Admin.Services
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<div class="animate-fade-in">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Fechamento de Venda</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Insira o valor final de venda do veículo e o sistema calcula os splits de lucro automaticamente.</p>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Veículo</label>
+                <AutoComplete Items="@_veiculos"
+                              Value="@_veiculoId"
+                              ValueChanged="@(v => { _veiculoId = v is Guid id ? id : Guid.Empty; })"
+                              DisplayText="@DisplayVeiculo"
+                              SelectedValue="@(v => v.Id)"
+                              Placeholder="Digite a placa ou modelo do veículo..." />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Preço de Venda Real</label>
+                <MonetaryInput @bind-Value="_precoVenda" />
+            </div>
+
+            <button @onclick="Fechar" disabled="@_loading"
+                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+                @(_loading ? "Processando..." : "Fechar Venda")
+            </button>
+
+            @if (!string.IsNullOrEmpty(_msg))
+            {
+                <div class="p-3 rounded-lg text-sm @(_erro ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400")">
+                    @_msg
+                </div>
+            }
+
+            @if (_resultado is not null)
+            {
+                <div class="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-4">
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                            <span class="text-slate-500 dark:text-slate-400">Preço Venda</span>
+                            <p class="font-semibold text-slate-800 dark:text-slate-200">R$ @_resultado.PrecoVendaReal.ToString("N2")</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                            <span class="text-slate-500 dark:text-slate-400">Custo Total</span>
+                            <p class="font-semibold text-slate-800 dark:text-slate-200">R$ @_resultado.CustoTotalVeiculo.ToString("N2")</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                            <span class="text-slate-500 dark:text-slate-400">Lucro Bruto</span>
+                            <p class="font-semibold text-emerald-600">R$ @_resultado.LucroBruto.ToString("N2")</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                    <th class="px-3 py-2 text-left font-medium text-slate-500">Investidor</th>
+                                    <th class="px-3 py-2 text-right font-medium text-slate-500">Alocado</th>
+                                    <th class="px-3 py-2 text-right font-medium text-slate-500">Lucro Bruto</th>
+                                    <th class="px-3 py-2 text-right font-medium text-slate-500">Taxa Gestão</th>
+                                    <th class="px-3 py-2 text-right font-medium text-slate-500">Taxa Infra</th>
+                                    <th class="px-3 py-2 text-right font-medium text-slate-500">Taxa Perf.</th>
+                                    <th class="px-3 py-2 text-right font-medium text-emerald-600">Lucro Líquido</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in _resultado.Fechamentos)
+                                {
+                                    <tr class="border-b border-slate-100 dark:border-slate-700/50">
+                                        <td class="px-3 py-2">@item.NomeInvestidor</td>
+                                        <td class="px-3 py-2 text-right">R$ @item.ValorAlocado.ToString("N2")</td>
+                                        <td class="px-3 py-2 text-right">R$ @item.LucroBrutoProporcional.ToString("N2")</td>
+                                        <td class="px-3 py-2 text-right text-red-500">-R$ @item.TaxaGestaoRetida.ToString("N2")</td>
+                                        <td class="px-3 py-2 text-right text-red-500">-R$ @item.TaxaInfraRetida.ToString("N2")</td>
+                                        <td class="px-3 py-2 text-right text-red-500">-R$ @item.TaxaPerformanceRetida.ToString("N2")</td>
+                                        <td class="px-3 py-2 text-right font-semibold text-emerald-600">R$ @item.LucroLiquidoPago.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<SelectVeiculo> _veiculos = new();
+    private Guid _veiculoId;
+    private decimal _precoVenda;
+    private bool _loading;
+    private string _msg = "";
+    private bool _erro;
+    private FecharVendaResponse? _resultado;
+
+    private string DisplayVeiculo(SelectVeiculo v) => $"{v.Placa} - {v.MarcaModelo} (R$ {v.PrecoCompra:N2})";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _veiculos = await Api.GetVeiculosSelectAsync("Disponivel,Preparacao");
+    }
+
+    private async Task Fechar()
+    {
+        _msg = "";
+        _erro = false;
+        _resultado = null;
+
+        if (_veiculoId == Guid.Empty)
+        {
+            _msg = "Selecione um veículo válido.";
+            _erro = true;
+            return;
+        }
+
+        if (_precoVenda <= 0)
+        {
+            _msg = "Preço de venda deve ser maior que zero.";
+            _erro = true;
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            _resultado = await Api.FecharVendaAsync(new FecharVendaRequest(_veiculoId, _precoVenda));
+            _msg = "Venda fechada com sucesso!";
+        }
+        catch (Exception ex)
+        {
+            _msg = $"Erro: {ex.Message}";
+            _erro = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

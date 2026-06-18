@@ -1,0 +1,135 @@
+@page "/aportes/{Id:guid}"
+@using AutoImovel.Admin.Services
+@using AutoImovel.Shared.Domain.Enums
+@inject ApiClient Api
+@inject NavigationManager NavigationManager
+
+<div class="animate-fade-in">
+    <div class="mb-4">
+        <a href="/aportes" class="text-sm text-sky-600 hover:underline">&larr; Voltar para aportes</a>
+    </div>
+
+    @if (_item == null)
+    {
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-12">
+            <p class="text-center text-slate-400">Carregando...</p>
+        </div>
+    }
+    else
+    {
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                Aporte - R$ @_item.ValorOriginal.ToString("N2")
+                <span class="ml-2 px-2 py-1 text-xs rounded-full @GetStatusBadgeClass(_item.Status)">
+                    @_item.Status.ToString()
+                </span>
+            </h3>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5">
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">Valor Original</p>
+                <p class="text-xl font-semibold text-slate-800 dark:text-slate-100">R$ @_item.ValorOriginal.ToString("N2")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5">
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">Saldo em Liquidez</p>
+                <p class="text-xl font-semibold text-slate-800 dark:text-slate-100">R$ @_item.SaldoEmLiquidez.ToString("N2")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5">
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Alocado</p>
+                <p class="text-xl font-semibold text-slate-800 dark:text-slate-100">R$ @_item.TotalAlocado.ToString("N2")</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5">
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">Data do Aporte</p>
+                <p class="text-xl font-semibold text-slate-800 dark:text-slate-100">@_item.DataAporte.ToString("dd/MM/yyyy")</p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 mb-6">
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">Investidor</p>
+            <a href="/investidores/@_item.InvestidorId" class="text-lg font-semibold text-sky-600 hover:underline">@_item.NomeInvestidor</a>
+            <p class="text-xs text-slate-400 mt-1">@_item.InvestidorId</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_item.UrlContratoScp))
+        {
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 mb-6">
+                <a href="@_item.UrlContratoScp" target="_blank" class="text-sm text-sky-600 hover:underline">Ver Contrato SCP</a>
+            </div>
+        }
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <h4 class="text-base font-semibold text-slate-800 dark:text-slate-100">Alocações</h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                            <th class="px-4 py-3 text-left font-medium text-slate-500">Veículo</th>
+                            <th class="px-4 py-3 text-right font-medium text-slate-500">Valor Alocado</th>
+                            <th class="px-4 py-3 text-left font-medium text-slate-500">Status</th>
+                            <th class="px-4 py-3 text-left font-medium text-slate-500">Data Alocação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!_item.Alocacoes.Any())
+                        {
+                            <tr><td colspan="4" class="px-4 py-12 text-center text-slate-400">Nenhuma alocação vinculada a este aporte.</td></tr>
+                        }
+                        @foreach (var aloc in _item.Alocacoes)
+                        {
+                            <tr class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                <td class="px-4 py-3">
+                                    <a href="/veiculos/@aloc.VeiculoId" class="text-sky-600 hover:underline">
+                                        @aloc.PlacaVeiculo - @aloc.MarcaModelo
+                                    </a>
+                                </td>
+                                <td class="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">R$ @aloc.ValorAlocado.ToString("N2")</td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 text-xs rounded-full @GetAlocacaoStatusBadgeClass(aloc.Status)">
+                                        @aloc.Status.ToString()
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">@aloc.DataAlocacao.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private AporteDetalheResponse? _item;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _item = await Api.GetAporteDetalheAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao carregar aporte: {ex.Message}");
+        }
+    }
+
+    private string GetStatusBadgeClass(StatusAporte status) => status switch
+    {
+        StatusAporte.EmLiquidez => "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        StatusAporte.Alocado => "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        StatusAporte.Resgatado => "bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300",
+        _ => "bg-slate-100 text-slate-700"
+    };
+
+    private string GetAlocacaoStatusBadgeClass(StatusAlocacao status) => status switch
+    {
+        StatusAlocacao.Ativo => "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        StatusAlocacao.Liquidado => "bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300",
+        _ => "bg-slate-100 text-slate-700"
+    };
+}

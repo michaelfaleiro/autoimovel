@@ -1,0 +1,66 @@
+@inherits LayoutComponentBase
+@inject AutoImovel.Admin.Services.ThemeService Theme
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="@($"min-h-screen { (Theme.IsDark ? "dark" : "") }")" data-theme="@(Theme.IsDark ? "dark" : "light")">
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-brand-primary-600 dark:text-slate-100 transition-colors duration-300">
+        <AdminSidebar @ref="_sidebar" />
+        <div class="lg:ml-64 min-h-screen flex flex-col">
+            <header class="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
+                    <div class="flex items-center gap-3">
+                         <button @onclick="() => _sidebar?.Toggle()" class="lg:hidden p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                         </button>
+                         <div>
+                             <h2 class="text-lg font-black text-brand-primary-600 dark:text-brand-gold font-plus tracking-tight">@_pageTitle</h2>
+                             <p class="text-[10px] uppercase font-bold tracking-widest text-slate-500">Painel Administrativo</p>
+                         </div>
+                    </div>
+                </div>
+            </header>
+            <main class="flex-1 px-4 sm:px-6 lg:px-8 py-6 bg-slate-50 dark:bg-slate-950">
+                @Body
+            </main>
+            <footer class="px-4 sm:px-6 lg:px-8 py-10 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center">
+                <p class="text-xs text-slate-500">© 2026 Autoimóvel. Todos os direitos reservados.</p>
+            </footer>
+        </div>
+    </div>
+</div>
+
+@code {
+    private AdminSidebar? _sidebar;
+    private string _pageTitle = "Início";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Theme.InitAsync();
+        Theme.OnThemeChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Theme.OnThemeChanged -= StateHasChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        var uri = Nav.Uri;
+        if (uri.EndsWith("/investidores", StringComparison.OrdinalIgnoreCase))
+            _pageTitle = "Investidores";
+        else if (uri.Contains("/aportes", StringComparison.OrdinalIgnoreCase))
+            _pageTitle = "Aportes";
+        else if (uri.Contains("/veiculos", StringComparison.OrdinalIgnoreCase))
+            _pageTitle = "Veículos";
+        else if (uri.Contains("/vincular-lastro", StringComparison.OrdinalIgnoreCase))
+            _pageTitle = "Vincular Lastro";
+        else if (uri.Contains("/fechamentos", StringComparison.OrdinalIgnoreCase))
+            _pageTitle = "Fechamentos";
+        else if (uri.Contains("/login", StringComparison.OrdinalIgnoreCase))
+            _pageTitle = "Login";
+        else
+            _pageTitle = "Início";
+    }
+}
